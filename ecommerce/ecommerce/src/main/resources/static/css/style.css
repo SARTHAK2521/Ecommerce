@@ -1,0 +1,274 @@
+/* --- GLOBAL STYLES & TYPOGRAPHY --- */
+:root {
+    --theme-primary: #00796b; /* Professional Teal */
+    --theme-primary-hover: #004d40; /* Darker shade for hover */
+    --text-dark: #212529;
+    --text-light: #f8f9fa;
+    --text-muted: #6c757d;
+    --bg-light: #f8f9fa;
+    --border-color: #dee2e6;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #fff; /* White background for the main body */
+    color: var(--text-dark);
+}
+
+/* --- NAVIGATION BAR --- */
+.navbar {
+    border-bottom: 1px solid var(--border-color);
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.navbar-scrolled {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-brand {
+    letter-spacing: -1px;
+}
+
+.navbar .nav-link {
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+    color: var(--theme-primary);
+}
+
+.search-container {
+    position: relative;
+}
+
+#search-input {
+    padding-left: 2.5rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+#cart-counter {
+    font-size: 10px;
+    font-weight: 600;
+    background-color: var(--theme-primary) !important;
+    color: white;
+}
+.navbar-light .nav-link,
+.navbar-light .navbar-brand {
+    color: var(--text-dark);
+}
+.navbar-light .nav-link i {
+    color: var(--text-dark);
+}
+
+/* --- HERO SECTION --- */
+.hero-section {
+    background-color: var(--bg-light);
+    padding: 6rem 0;
+}
+.hero-section .btn-dark {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    border-radius: 25px;
+    padding: 10px 30px;
+    font-weight: 500;
+}
+.hero-section .btn-dark:hover {
+    background-color: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+}
+
+/* --- SECTION TITLES --- */
+.section-title {
+    position: relative;
+    margin-bottom: 3rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+.section-title span {
+    position: relative;
+    padding-bottom: 10px;
+}
+.section-title span::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 3px;
+    background-color: var(--theme-primary);
+}
+
+/* --- CATEGORY CARDS --- */
+.category-card {
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+}
+.category-card:hover,
+.category-card.active {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    border-color: var(--theme-primary);
+}
+.category-card i {
+    font-size: 2.5rem;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+.category-card h5 {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    transition: color 0.2s ease;
+}
+.category-card.active i, .category-card.active h5,
+.category-card:hover i, .category-card:hover h5 {
+    color: var(--theme-primary);
+}
+
+
+/* --- PRODUCT CARDS --- */
+.product-card {
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+.product-card .product-img-container {
+    background-color: var(--bg-light);
+    padding: 1rem;
+}
+.product-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+.product-card:hover img {
+    transform: scale(1.05);
+}
+.product-card-body {
+    padding: 1rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+.product-card .category {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.product-card .product-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0.25rem 0;
+    flex-grow: 1;
+}
+.product-card .price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.product-card .btn-add-to-cart {
+    width: 100%;
+    font-weight: 500;
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    color: white;
+}
+.product-card .btn-add-to-cart:hover {
+    background-color: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+}
+.product-card .btn-add-to-cart.added {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+/* --- FOOTER --- */
+.bg-dark {
+    background-color: var(--text-dark) !important;
+}
+.text-muted-dark {
+    color: #adb5bd !important;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.text-muted-dark:hover {
+    color: #fff !important;
+}
+
+footer .btn-primary {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+}
+
+footer .btn-primary:hover {
+    background-color: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+}
+
+
+/* --- SCROLL TO TOP BUTTON --- */
+.scroll-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background-color: var(--theme-primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    z-index: 1000;
+}
+.scroll-to-top.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.scroll-to-top:hover {
+    background-color: var(--theme-primary-hover);
+}
+
