@@ -4,41 +4,91 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const noResults = document.getElementById('no-results');
     const cartCounter = document.getElementById('cart-counter');
-    const checkoutBtn = document.getElementById('checkout-btn');
+    const loadingSpinner = document.getElementById('loading-spinner');
 
     let allProducts = [];
     let cart = [];
 
+    // --- CART PERSISTENCE & SYNC (Shared functions) ---
+    window.saveCart = () => {
+        localStorage.setItem('cart', JSON.stringify(cart));
+    };
+
+    window.loadCart = () => {
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) {
+            cart = JSON.parse(savedCart);
+        }
+        window.updateCartCounter();
+    };
+
+    window.updateCartCounter = () => {
+        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        if (cartCounter) {
+            cartCounter.textContent = totalItems;
+            cartCounter.setAttribute('aria-label', `Cart with ${totalItems} items`);
+        }
+    };
+
+    window.getCart = () => cart;
+    window.setCart = (newCart) => {
+        cart = newCart;
+        window.saveCart();
+        window.updateCartCounter();
+    };
+
     // --- RENDER PRODUCTS ---
     const renderProducts = (productsToRender) => {
+        if (loadingSpinner) loadingSpinner.style.display = 'none';
         productGrid.innerHTML = '';
         if (productsToRender.length === 0) {
             noResults.style.display = 'block';
+            noResults.innerHTML = `
+                <span class="fs-5 text-secondary"><i class="bi bi-emoji-frown me-2"></i>No products found.</span>
+                <a href="#" id="clear-search" class="ms-2 text-decoration-underline">Clear search</a>
+            `;
+            const clearBtn = document.getElementById('clear-search');
+            if (clearBtn) {
+                clearBtn.onclick = (e) => {
+                    e.preventDefault();
+                    searchInput.value = '';
+                    renderProducts(allProducts);
+                };
+            }
         } else {
             noResults.style.display = 'none';
         }
 
         productsToRender.forEach(product => {
-            const isAdded = cart.some(item => item.id === product.id);
-            const buttonText = isAdded ? 'Added!' : 'Add to Cart';
-            const buttonClass = isAdded ? 'btn-success added' : 'btn-dark';
+            const cartItem = cart.find(item => item.id === product.id);
+            const isInCart = !!cartItem;
+            const quantity = isInCart ? cartItem.quantity : 0;
 
             const productCard = document.createElement('div');
             productCard.className = 'col';
             productCard.innerHTML = `
-                <div class="card h-100 product-card">
-                    <div class="product-img-container">
-                        <a href="/product.html?id=${product.id}">
-                           <img src="${product.imageUrl}" class="card-img-top" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/600x400';">
+                <div class="card h-100 product-card shadow border-0">
+                    <div class="product-img-container bg-white p-3 d-flex align-items-center justify-content-center" style="min-height:180px;">
+                        <a href="/product.html?id=${product.id}" tabindex="0">
+                            <img src="${product.imageUrl}" class="card-img-top" alt="${product.name}" aria-label="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=No+Image';" style="max-height:140px;object-fit:contain;">
                         </a>
                     </div>
-                    <div class="card-body product-card-body">
-                        <p class="category">${product.category || 'Uncategorized'}</p>
-                        <h5 class="card-title product-title">
-                            <a href="/product.html?id=${product.id}" class="text-dark text-decoration-none">${product.name}</a>
+                    <div class="card-body product-card-body d-flex flex-column">
+                        <p class="category mb-1 text-uppercase text-primary small fw-semibold">${product.category || 'Uncategorized'}</p>
+                        <h5 class="card-title product-title mb-2">
+                            <a href="/product.html?id=${product.id}" class="text-dark text-decoration-none" aria-label="View details for ${product.name}">${product.name}</a>
                         </h5>
-                        <p class="card-text price">$${product.price.toFixed(2)}</p>
-                        <button class="btn ${buttonClass} btn-add-to-cart" data-product-id="${product.id}">${buttonText}</button>
+                        <p class="card-text price mb-2 fw-bold fs-5 text-success">$${product.price.toFixed(2)}</p>
+                        <div class="add-to-cart-container mt-auto" data-product-id="${product.id}">
+                            ${isInCart ? 
+                                `<div class="quantity-controls d-flex align-items-center justify-content-center">
+                                    <button class="quantity-btn decrement btn btn-outline-secondary rounded-circle me-2" aria-label="Decrease quantity" style="width:32px;height:32px;">-</button>
+                                    <span class="quantity-display px-2 fw-semibold">${quantity}</span>
+                                    <button class="quantity-btn increment btn btn-outline-secondary rounded-circle ms-2" aria-label="Increase quantity" style="width:32px;height:32px;">+</button>
+                                </div>` :
+                                `<button class="btn btn-primary btn-add-to-cart w-100 fw-semibold" aria-label="Add ${product.name} to cart"><i class="bi bi-cart-plus me-1"></i>Add to Cart</button>`
+                            }
+                        </div>
                     </div>
                 </div>
             `;
@@ -49,9 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- RENDER CATEGORIES ---
     const renderCategories = (products) => {
         const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-        // UPDATED: Added new icons for Fashion, Home & Kitchen, and changed Clothing.
         const categoryIcons = {
-            'Electronics': 'bi-headphone',
+            'Electronics': 'bi-laptop',
             'Books': 'bi-book',
             'Clothing': 'bi-t-shirt',
             'Fashion': 'bi-handbag-fill',
@@ -65,11 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
         categories.forEach(category => {
             const icon = categoryIcons[category] || categoryIcons['Default'];
             const categoryCard = document.createElement('div');
-            categoryCard.className = 'col-md-2 col-6';
+            categoryCard.className = 'col-md-2 col-6 mb-3';
             categoryCard.innerHTML = `
-                <div class="category-card" data-category="${category}">
-                    <i class="bi ${icon}"></i>
-                    <h5>${category}</h5>
+                <div class="category-card py-3 px-2 shadow-sm border" data-category="${category}" tabindex="0" role="button" aria-label="Filter by ${category}">
+                    <i class="bi ${icon} fs-2 mb-2 text-primary" aria-hidden="true"></i>
+                    <h5 class="mb-0 fs-6 fw-semibold">${category}</h5>
                 </div>
             `;
             categoryFilters.appendChild(categoryCard);
@@ -78,106 +127,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- EVENT LISTENERS ---
     const setupEventListeners = () => {
-        // Category Filter Clicks
         categoryFilters.addEventListener('click', (e) => {
             const card = e.target.closest('.category-card');
             if (card) {
+                document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
                 const category = card.dataset.category;
                 const filteredProducts = allProducts.filter(p => p.category === category);
                 renderProducts(filteredProducts);
             }
         });
 
-        // Search Input
+        categoryFilters.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const card = e.target.closest('.category-card');
+                if (card) {
+                    document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    const category = card.dataset.category;
+                    const filteredProducts = allProducts.filter(p => p.category === category);
+                    renderProducts(filteredProducts);
+                }
+            }
+        });
+
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredProducts = allProducts.filter(p =>
                 p.name.toLowerCase().includes(searchTerm) ||
-                p.description.toLowerCase().includes(searchTerm) ||
+                (p.description && p.description.toLowerCase().includes(searchTerm)) ||
                 (p.category && p.category.toLowerCase().includes(searchTerm))
             );
             renderProducts(filteredProducts);
         });
 
-        // Add to Cart Clicks
         productGrid.addEventListener('click', e => {
-            if (e.target.classList.contains('btn-add-to-cart') && !e.target.classList.contains('added')) {
-                const productId = parseInt(e.target.dataset.productId, 10);
-                const productToAdd = allProducts.find(p => p.id === productId);
-                
-                if (productToAdd) {
-                    cart.push({ ...productToAdd, quantity: 1 });
-                    updateCartCounter();
-                    e.target.textContent = 'Added!';
-                    e.target.classList.remove('btn-dark');
-                    e.target.classList.add('btn-success', 'added');
+            const addToCartContainer = e.target.closest('.add-to-cart-container');
+            if (!addToCartContainer) return;
+            
+            const productId = parseInt(addToCartContainer.dataset.productId, 10);
+            let productToUpdate = cart.find(item => item.id === productId);
+
+            if (e.target.classList.contains('btn-add-to-cart')) {
+                if (!productToUpdate) {
+                    const product = allProducts.find(p => p.id === productId);
+                    if (product) {
+                        cart.push({ ...product, quantity: 1 });
+                    }
+                }
+            } else if (e.target.classList.contains('increment')) {
+                if (productToUpdate) {
+                    productToUpdate.quantity++;
+                }
+            } else if (e.target.classList.contains('decrement')) {
+                if (productToUpdate && productToUpdate.quantity > 1) {
+                    productToUpdate.quantity--;
+                } else if (productToUpdate && productToUpdate.quantity === 1) {
+                    cart = cart.filter(item => item.id !== productId);
                 }
             }
+
+            window.saveCart();
+            window.updateCartCounter();
+            renderProducts(allProducts);
         });
-
-        // Checkout Button Click
-        checkoutBtn.addEventListener('click', handleCheckout);
     };
-    
-    // --- CART LOGIC ---
-    const updateCartCounter = () => {
-        cartCounter.textContent = cart.length;
-    };
-    
-    const handleCheckout = async () => {
-        if (cart.length === 0) {
-            alert("Your cart is empty!");
-            return;
-        }
-
-        const orderRequest = {
-            userId: 1, // Hardcoded for now. Will be dynamic after login implementation.
-            items: cart.map(item => ({
-                productId: item.id,
-                quantity: item.quantity
-            }))
-        };
-
-        try {
-            const response = await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(orderRequest)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to place order');
-            }
-            
-            alert('Order placed successfully!');
-            cart = []; // Clear the cart
-            updateCartCounter();
-            renderProducts(allProducts); // Re-render to reset "Added!" buttons
-
-        } catch (error) {
-            console.error('Checkout error:', error);
-            alert(`Error placing order: ${error.message}`);
-        }
-    };
-
 
     // --- INITIAL FETCH & RENDER ---
     const initialize = async () => {
+        window.loadCart();
+        if (loadingSpinner) loadingSpinner.style.display = 'block';
         try {
             const response = await fetch('/api/products');
             if (!response.ok) throw new Error('Network response was not ok');
             allProducts = await response.json();
-            
+
             renderProducts(allProducts);
             renderCategories(allProducts);
             setupEventListeners();
         } catch (error) {
             console.error('Failed to fetch initial data:', error);
             productGrid.innerHTML = '<p class="text-danger text-center">Could not load products. Please try again later.</p>';
+        } finally {
+            if (loadingSpinner) loadingSpinner.style.display = 'none';
         }
     };
 
     initialize();
 });
-

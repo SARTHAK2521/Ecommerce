@@ -16,11 +16,12 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-
     <!-- Main Navigation Bar -->
-    <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+    <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top shadow-sm">
         <div class="container py-2">
-            <a class="navbar-brand fw-bold fs-4" href="/">E-Store</a>
+            <a class="navbar-brand fw-bold fs-3 text-primary" href="/">
+                <i class="bi bi-bag-check-fill me-2"></i>E-Store
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -31,13 +32,15 @@
                     <li class="nav-item"><a class="nav-link" href="#">Categories</a></li>
                     <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
                 </ul>
-                <div class="d-flex align-items-center">
-                    <div class="input-group me-3">
-                        <input type="text" id="search-input" class="form-control" placeholder="Search...">
-                        <button class="btn btn-outline-secondary" type="button"><i class="bi bi-search"></i></button>
-                    </div>
+                <div class="d-flex align-items-center gap-3">
+                    <form class="d-none d-lg-block" role="search" autocomplete="off">
+                        <div class="input-group">
+                            <input type="text" id="search-input" class="form-control" placeholder="Search products..." aria-label="Search products">
+                            <button class="btn btn-outline-secondary" type="button"><i class="bi bi-search"></i></button>
+                        </div>
+                    </form>
                     <div class="nav-item dropdown">
-                        <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-label="User menu">
                             <i class="bi bi-person-circle fs-3"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -47,40 +50,60 @@
                             <li><button class="dropdown-item" id="checkout-btn">Checkout</button></li>
                         </ul>
                     </div>
-                    <a class="nav-link position-relative ms-3" href="#">
+                    <a class="nav-link position-relative" href="#" aria-label="View cart">
                         <i class="bi bi-cart fs-3"></i>
-                        <span id="cart-counter" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">0</span>
+                        <span id="cart-counter" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark shadow-sm">0</span>
                     </a>
                 </div>
             </div>
         </div>
     </nav>
-    
+
+    <!-- Spinner (above product grid) -->
+    <div id="loading-spinner" style="display:none;text-align:center;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
     <main>
         <!-- Hero Section -->
         <section class="hero-section text-center py-5">
             <div class="container">
-                <h1 class="display-3 fw-bold">Unbeatable Deals, Unmatched Quality.</h1>
-                <p class="lead text-muted col-lg-6 mx-auto">Discover a curated selection of products designed to fit your lifestyle. Free shipping on orders over $50.</p>
-                <button class="btn btn-dark btn-lg mt-3">Shop New Arrivals</button>
+                <h1 class="display-3 fw-bold mb-3" style="color:var(--text-dark);">Unbeatable Deals, Unmatched Quality.</h1>
+                <p class="lead text-muted col-lg-7 mx-auto mb-4">Discover a curated selection of products designed to fit your lifestyle. Free shipping on orders over $50.</p>
+                <a href="#product-grid" class="btn btn-primary btn-lg shadow-sm px-4">Shop New Arrivals <i class="bi bi-arrow-right ms-2"></i></a>
             </div>
         </section>
         
         <div class="container my-5">
-            <!-- Shop by Category Section -->
+            <!-- Shop by Category Section as Carousel -->
             <section class="mb-5">
                 <h2 class="text-center section-title"><span>Shop by Category</span></h2>
-                <div class="row g-3 justify-content-center" id="category-filters">
-                    <!-- Category cards will be dynamically inserted here by JavaScript -->
+                <div id="categoryCarouselWrapper" class="position-relative">
+                    <button class="carousel-control-prev d-none d-md-flex" type="button" data-bs-target="#categoryCarousel" data-bs-slide="prev" style="left:-40px;top:50%;transform:translateY(-50%);z-index:2;">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <div id="categoryCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="false">
+                        <div class="carousel-inner">
+                            <div class="carousel-item active">
+                                <div class="row g-3 justify-content-center flex-nowrap" id="category-filters">
+                                    <!-- Category cards will be dynamically inserted here by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="carousel-control-next d-none d-md-flex" type="button" data-bs-target="#categoryCarousel" data-bs-slide="next" style="right:-40px;top:50%;transform:translateY(-50%);z-index:2;">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
                 </div>
             </section>
-            
             <!-- All Products Section -->
             <section>
                 <h2 class="text-center section-title"><span>Featured Products</span></h2>
-                <div id="no-results" class="text-center py-5" style="display: none;">
-                    <p class="fs-4 text-muted">No products found.</p>
-                </div>
+                <div id="no-results" class="alert alert-warning text-center" style="display:none;"></div>
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="product-grid">
                     <!-- All product cards will be dynamically inserted here by JavaScript -->
                 </div>
@@ -89,44 +112,51 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-light pt-5 pb-4 mt-5 border-top">
+    <footer class="bg-light pt-5 pb-4 mt-5 border-top shadow-sm">
         <div class="container text-center text-md-start">
             <div class="row">
                 <div class="col-md-3 col-lg-4 col-xl-3 mx-auto mb-4">
-                    <h6 class="text-uppercase fw-bold">E-Store</h6>
-                    <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #333; height: 2px"/>
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="bi bi-bag-check-fill me-2"></i>E-Store</h6>
+                    <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #ffb300; height: 2px"/>
                     <p>Your one-stop shop for everything you need. Quality and customer satisfaction are our top priorities.</p>
                 </div>
                 <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">
                     <h6 class="text-uppercase fw-bold">Products</h6>
-                      <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #333; height: 2px"/>
-                    <p><a href="#!" class="text-muted">Electronics</a></p>
-                    <p><a href="#!" class="text-muted">Fashion</a></p>
-                    <p><a href="#!" class="text-muted">Books</a></p>
+                    <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #ffb300; height: 2px"/>
+                    <p><a href="#!" class="text-muted text-decoration-none">Electronics</a></p>
+                    <p><a href="#!" class="text-muted text-decoration-none">Fashion</a></p>
+                    <p><a href="#!" class="text-muted text-decoration-none">Books</a></p>
                 </div>
                 <div class="col-md-3 col-lg-2 col-xl-2 mx-auto mb-4">
                     <h6 class="text-uppercase fw-bold">Useful links</h6>
-                      <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #333; height: 2px"/>
-                    <p><a href="#" class="text-muted">Your Account</a></p>
-                    <p><a href="/admin.html" class="text-muted">Admin Panel</a></p> <!-- THIS LINK IS ADDED -->
-                    <p><a href="#" class="text-muted">Shipping Rates</a></p>
-                    <p><a href="#" class="text-muted">Help</a></p>
+                    <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #ffb300; height: 2px"/>
+                    <p><a href="#" class="text-muted text-decoration-none">Your Account</a></p>
+                    <p><a href="/admin.html" class="text-muted text-decoration-none">Admin Panel</a></p>
+                    <p><a href="#" class="text-muted text-decoration-none">Shipping Rates</a></p>
+                    <p><a href="#" class="text-muted text-decoration-none">Help</a></p>
                 </div>
                 <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mb-md-0 mb-4">
                     <h6 class="text-uppercase fw-bold">Contact</h6>
-                      <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #333; height: 2px"/>
+                    <hr class="mb-4 mt-0 d-inline-block mx-auto" style="width: 60px; background-color: #ffb300; height: 2px"/>
                     <p><i class="bi bi-house me-2"></i> New York, NY 10012, US</p>
                     <p><i class="bi bi-envelope me-2"></i> info@example.com</p>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-12 text-center small text-muted">
+                    &copy; <span id="year"></span> E-Store. All rights reserved.
                 </div>
             </div>
         </div>
     </footer>
 
-
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom App Logic -->
     <script src="/js/app.js"></script>
+    <script>
+        // Set current year in footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>
-

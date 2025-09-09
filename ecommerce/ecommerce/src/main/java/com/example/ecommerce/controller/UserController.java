@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -26,43 +28,112 @@ public class UserController {
     private UserService userService;
 
     /**
-     * Endpoint to handle new user registration.
+     * READ: Endpoint to get a list of all users.
+     * NOTE: For a real-world app, this should be restricted to ADMIN roles.
+     * @return A list of all users.
+     */
+    @GetMapping
+    public List<User> getAllUsers() {
+        return userService.findAllUsers();
+    }
+
+    /**
+     * READ: Endpoint to get a single user by ID.
+     * @param id The ID of the user to retrieve.
+     * @return A ResponseEntity with the user or a 404 status.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        return userService.findUserById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * READ: Endpoint to get the details of the currently logged-in user.
+     * @param principal The object representing the currently authenticated user.
+     * @return A ResponseEntity with the user's data or an unauthorized status.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No authenticated user found");
+        }
+        
+        Optional<User> optionalUser = userService.findByUsername(principal.getName());
+        
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            // Important: Do not send the password back in the response
+            user.setPassword(null);
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+    }
+
+    /**
+     * CREATE: Endpoint to handle new user registration.
      * @param user The User object from the request body.
-     * @return A ResponseEntity with the created user (without password) or an error message.
+     * @return A ResponseEntity with the created user or an error message.
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
-            // CORRECTED: The method name is createUser, not registerNewUser.
             User registeredUser = userService.createUser(user);
-            // Important: Do not send the password back in the response for security
             registeredUser.setPassword(null);
             return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
         } catch (Exception e) {
-            // Return a Bad Request status with the error message (e.g., "Username already exists")
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
     /**
-     * Endpoint to handle user login.
+     * UPDATE: Endpoint to update an existing user by ID.
+     * @param id The ID of the user to update.
+     * @param userDetails The updated user data.
+     * @return A ResponseEntity with the updated user or a 404 status.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        try {
+            User updatedUser = userService.updateUser(id, userDetails);
+            updatedUser.setPassword(null); // Ensure password is not returned
+            return ResponseEntity.ok(updatedUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * DELETE: Endpoint to delete a user by ID.
+     * @param id The ID of the user to delete.
+     * @return A ResponseEntity with a 204 No Content status on success or 404 if not found.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        try {
+            userService.deleteUserById(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * AUTHENTICATE: Endpoint to handle user login.
      * @param loginRequest The login credentials from the request body.
      * @return A ResponseEntity with the authenticated user's data or an unauthorized error.
      */
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
-        // CORRECTED: Handle the Optional<User> returned by the service.
         Optional<User> optionalUser = userService.authenticate(loginRequest.username, loginRequest.password);
-
         if (optionalUser.isPresent()) {
             User authenticatedUser = optionalUser.get();
-            // On successful login, return user data (without the password)
             authenticatedUser.setPassword(null);
             return ResponseEntity.ok(authenticatedUser);
         } else {
-            // For security, always return a generic "Unauthorized" status for any login failure
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }
     }
 }
-
