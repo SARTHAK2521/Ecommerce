@@ -67,8 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             if (response.ok) {
-                // On successful login, redirect to the homepage
-                window.location.href = '/'; 
+                const user = await response.json();
+                // Check user role and redirect accordingly
+                if (user.role === 'ROLE_ADMIN') {
+                    window.location.href = '/admin.html';
+                } else {
+                    window.location.href = '/index.html';
+                }
             } else {
                 // If login fails, show an error message
                 loginMessageDiv.innerHTML = `<div class="alert alert-danger">Invalid username or password.</div>`;
@@ -79,4 +84,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-

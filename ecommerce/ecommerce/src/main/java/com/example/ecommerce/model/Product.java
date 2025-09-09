@@ -14,8 +14,11 @@ public class Product {
     private String name;
     private String description;
     private double price;
+    private double originalPrice;
     private String imageUrl;
-    private String category; // <-- NEW FIELD
+    private String category;
+    private boolean onSale;
+    private int stockQuantity;
 
     // --- Getters and Setters ---
 
@@ -27,10 +30,17 @@ public class Product {
     public void setDescription(String description) { this.description = description; }
     public double getPrice() { return price; }
     public void setPrice(double price) { this.price = price; }
+    public double getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(double originalPrice) { this.originalPrice = originalPrice; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     
-    // New getter and setter for category
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+
+    public boolean isOnSale() { return onSale; }
+    public void setOnSale(boolean onSale) { this.onSale = onSale; }
+
+    public int getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
 }

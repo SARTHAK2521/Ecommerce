@@ -266,6 +266,45 @@ body {
     border-color: #388e3c;
 }
 
+/* New: Deals Badge */
+.discount-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #f44336;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+    padding: 0.25em 0.75em;
+    border-radius: 50px;
+}
+
+.price-flex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.5rem;
+}
+.original-price {
+    font-size: 0.9rem;
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+.limited-stock {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e91e63;
+    margin-top: 0.5rem;
+    display: block;
+}
+.out-of-stock {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e91e63;
+    margin-top: 0.5rem;
+    display: block;
+}
+
 /* --- QUANTITY CONTROLS --- */
 .quantity-controls {
     display: flex;
@@ -351,6 +390,56 @@ footer a.text-muted:hover {
 footer hr {
     background: var(--theme-accent);
     opacity: 0.7;
+}
+
+/* --- CHECKOUT MODAL STYLES --- */
+.checkout-section {
+    margin-bottom: 2rem;
+}
+.checkout-section h6 {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+}
+.checkout-section .list-group-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+}
+.checkout-section .list-group-item:last-child {
+    border-bottom: none;
+}
+.shipping-option {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+.shipping-option:hover {
+    background-color: #f0f4f8;
+    border-color: var(--theme-primary);
+}
+.shipping-option.active {
+    border-color: var(--theme-primary);
+    background-color: #e0f2f1;
+}
+.shipping-option .form-check-label {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.summary-total-section {
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--border-color);
+}
+.modal-footer {
+    padding: 1rem;
 }
 
 /* --- RESPONSIVE --- */

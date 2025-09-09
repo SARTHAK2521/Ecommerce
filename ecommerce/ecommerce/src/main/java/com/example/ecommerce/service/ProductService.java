@@ -32,6 +32,14 @@ public class ProductService {
     }
 
     /**
+     * READ: Retrieves all products that are currently on sale.
+     * @return a list of products on sale.
+     */
+    public List<Product> findOnSaleProducts() {
+        return productRepository.findByOnSale(true);
+    }
+
+    /**
      * CREATE: Saves a new product to the database.
      * @param product The product object to be saved.
      * @return the saved product, including its new ID.
@@ -48,18 +56,15 @@ public class ProductService {
      * @throws RuntimeException if no product is found with the given ID.
      */
     public Product updateProduct(Long id, Product productDetails) {
-        // Find the existing product by its ID or throw an error if it doesn't exist.
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
 
-        // Update the fields with the new details from the request.
         existingProduct.setName(productDetails.getName());
         existingProduct.setDescription(productDetails.getDescription());
         existingProduct.setPrice(productDetails.getPrice());
         existingProduct.setImageUrl(productDetails.getImageUrl());
         existingProduct.setCategory(productDetails.getCategory());
 
-        // Save the updated product back to the database.
         return productRepository.save(existingProduct);
     }
 
@@ -69,11 +74,9 @@ public class ProductService {
      * @throws RuntimeException if no product is found with the given ID.
      */
     public void deleteProductById(Long id) {
-        // Check if the product exists before trying to delete to provide a clear error.
         if (!productRepository.existsById(id)) {
             throw new RuntimeException("Product not found with id: " + id);
         }
         productRepository.deleteById(id);
     }
 }
-

@@ -26,6 +26,15 @@ public class ProductController {
     }
 
     /**
+     * READ: Handles GET requests to /api/products/deals to fetch products on sale.
+     * @return A list of products that are on sale.
+     */
+    @GetMapping("/deals")
+    public List<Product> getProductsOnSale() {
+        return productService.findOnSaleProducts();
+    }
+
+    /**
      * READ: Handles GET requests to /api/products/{id} to fetch a single product.
      * @param id The ID of the product to retrieve.
      * @return A ResponseEntity containing the product if found (200 OK), or 404 Not Found.
@@ -73,10 +82,9 @@ public class ProductController {
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         try {
             productService.deleteProductById(id);
-            return ResponseEntity.noContent().build(); // Standard practice for successful DELETE
+            return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 }
-

@@ -18,18 +18,24 @@ public class OrderService {
     private UserRepository userRepository;
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private ShippingOptionRepository shippingOptionRepository;
 
-    @Transactional // Ensures the whole method is one database transaction
-    public Order createOrder(Long userId, Map<Long, Integer> cart) {
-        // Find the user who is placing the order
+    @Transactional
+    public Order createOrder(Long userId, Long shippingOptionId, Map<Long, Integer> cart) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
+        ShippingOption shippingOption = shippingOptionRepository.findById(shippingOptionId)
+                .orElseThrow(() -> new RuntimeException("Shipping option not found with id: " + shippingOptionId));
+
         Order order = new Order();
         order.setUser(user);
+        order.setShippingOption(shippingOption);
+        order.setShippingCost(shippingOption.getCost());
         order.setOrderDate(LocalDateTime.now());
 
-        double totalAmount = 0.0;
+        double subtotalAmount = 0.0;
 
         for (Map.Entry<Long, Integer> entry : cart.entrySet()) {
             Long productId = entry.getKey();
@@ -46,10 +52,10 @@ public class OrderService {
 
             order.getOrderItems().add(orderItem);
 
-            totalAmount += product.getPrice() * quantity;
+            subtotalAmount += product.getPrice() * quantity;
         }
 
-        order.setTotalAmount(totalAmount);
+        order.setTotalAmount(subtotalAmount + shippingOption.getCost());
         return orderRepository.save(order);
     }
 }

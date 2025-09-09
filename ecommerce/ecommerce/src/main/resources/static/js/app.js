@@ -5,9 +5,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const noResults = document.getElementById('no-results');
     const cartCounter = document.getElementById('cart-counter');
     const loadingSpinner = document.getElementById('loading-spinner');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+    const cartItemsList = document.getElementById('cart-items-list');
+    const shippingOptionsList = document.getElementById('shipping-options-list');
+    const totalPriceElement = document.getElementById('total-price');
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    const dealsNavLink = document.getElementById('deals-nav-link');
+    const homeNavLink = document.getElementById('home-nav-link');
+    const productSectionTitle = document.getElementById('product-section-title');
 
     let allProducts = [];
     let cart = [];
+    let shippingOptions = [];
+    let selectedShippingOption = null;
 
     // --- CART PERSISTENCE & SYNC (Shared functions) ---
     window.saveCart = () => {
@@ -63,11 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const cartItem = cart.find(item => item.id === product.id);
             const isInCart = !!cartItem;
             const quantity = isInCart ? cartItem.quantity : 0;
+            const isOutOfStock = product.stockQuantity <= 0;
+            const isLimitedStock = product.stockQuantity > 0 && product.stockQuantity <= 10;
+            const discountPercent = product.onSale ? ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0) : 0;
 
             const productCard = document.createElement('div');
             productCard.className = 'col';
             productCard.innerHTML = `
-                <div class="card h-100 product-card shadow border-0">
+                <div class="card h-100 product-card shadow border-0 position-relative">
+                    ${product.onSale ? `<span class="discount-badge">-${discountPercent}%</span>` : ''}
                     <div class="product-img-container bg-white p-3 d-flex align-items-center justify-content-center" style="min-height:180px;">
                         <a href="/product.html?id=${product.id}" tabindex="0">
                             <img src="${product.imageUrl}" class="card-img-top" alt="${product.name}" aria-label="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=No+Image';" style="max-height:140px;object-fit:contain;">
@@ -78,7 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h5 class="card-title product-title mb-2">
                             <a href="/product.html?id=${product.id}" class="text-dark text-decoration-none" aria-label="View details for ${product.name}">${product.name}</a>
                         </h5>
-                        <p class="card-text price mb-2 fw-bold fs-5 text-success">$${product.price.toFixed(2)}</p>
+                        <div class="price-flex">
+                            <p class="card-text price mb-0 fw-bold fs-5 text-success">$${product.price.toFixed(2)}</p>
+                            ${product.onSale ? `<p class="card-text original-price mb-0">$${product.originalPrice.toFixed(2)}</p>` : ''}
+                        </div>
+                        ${isLimitedStock ? `<span class="limited-stock"><i class="bi bi-exclamation-circle me-1"></i>Only ${product.stockQuantity} left!</span>` : ''}
+                        ${isOutOfStock ? `<span class="out-of-stock fw-bold"><i class="bi bi-x-circle me-1"></i>Out of Stock</span>` : ''}
                         <div class="add-to-cart-container mt-auto" data-product-id="${product.id}">
                             ${isInCart ? 
                                 `<div class="quantity-controls d-flex align-items-center justify-content-center">
@@ -86,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span class="quantity-display px-2 fw-semibold">${quantity}</span>
                                     <button class="quantity-btn increment btn btn-outline-secondary rounded-circle ms-2" aria-label="Increase quantity" style="width:32px;height:32px;">+</button>
                                 </div>` :
-                                `<button class="btn btn-primary btn-add-to-cart w-100 fw-semibold" aria-label="Add ${product.name} to cart"><i class="bi bi-cart-plus me-1"></i>Add to Cart</button>`
+                                `<button class="btn btn-primary btn-add-to-cart w-100 fw-semibold" aria-label="Add ${product.name} to cart" ${isOutOfStock ? 'disabled' : ''}><i class="bi bi-cart-plus me-1"></i>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>`
                             }
                         </div>
                     </div>
@@ -125,6 +145,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // --- RENDER CHECKOUT MODAL ---
+    const renderCheckoutModal = () => {
+        // Render cart items
+        cartItemsList.innerHTML = '';
+        if (cart.length === 0) {
+            cartItemsList.innerHTML = '<li class="list-group-item text-center text-muted">Your cart is empty.</li>';
+        } else {
+            cart.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <div>${item.name} <span class="badge bg-secondary rounded-pill">${item.quantity}</span></div>
+                    <span class="fw-bold">$${(item.price * item.quantity).toFixed(2)}</span>
+                `;
+                cartItemsList.appendChild(li);
+            });
+        }
+
+        // Render shipping options
+        shippingOptionsList.innerHTML = '';
+        shippingOptions.forEach(option => {
+            const div = document.createElement('div');
+            div.className = 'form-check';
+            div.innerHTML = `
+                <input class="form-check-input" type="radio" name="shippingOption" id="shipping-${option.id}" value="${option.id}" data-cost="${option.cost}" ${selectedShippingOption && selectedShippingOption.id === option.id ? 'checked' : ''}>
+                <label class="form-check-label d-flex justify-content-between" for="shipping-${option.id}">
+                    <span>${option.name} (${option.estimatedDeliveryTime})</span>
+                    <span class="fw-bold">$${option.cost.toFixed(2)}</span>
+                </label>
+            `;
+            shippingOptionsList.appendChild(div);
+        });
+
+        updateTotal();
+    };
+
+    const updateTotal = () => {
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const shippingCost = selectedShippingOption ? selectedShippingOption.cost : 0;
+        const total = subtotal + shippingCost;
+        totalPriceElement.textContent = `$${total.toFixed(2)}`;
+    };
+
+    const fetchShippingOptions = async () => {
+        try {
+            const response = await fetch('/api/shipping');
+            if (!response.ok) throw new Error('Failed to fetch shipping options');
+            shippingOptions = await response.json();
+            if (shippingOptions.length > 0) {
+                selectedShippingOption = shippingOptions[0];
+            }
+        } catch (error) {
+            console.error('Error fetching shipping options:', error);
+        }
+    };
+    
     // --- EVENT LISTENERS ---
     const setupEventListeners = () => {
         categoryFilters.addEventListener('click', (e) => {
@@ -176,8 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } else if (e.target.classList.contains('increment')) {
-                if (productToUpdate) {
+                const productInStock = allProducts.find(p => p.id === productId).stockQuantity;
+                if (productToUpdate && productToUpdate.quantity < productInStock) {
                     productToUpdate.quantity++;
+                } else if (productToUpdate && productToUpdate.quantity >= productInStock) {
+                     alert("You've reached the maximum available stock for this product.");
                 }
             } else if (e.target.classList.contains('decrement')) {
                 if (productToUpdate && productToUpdate.quantity > 1) {
@@ -191,26 +270,122 @@ document.addEventListener('DOMContentLoaded', () => {
             window.updateCartCounter();
             renderProducts(allProducts);
         });
+        
+        checkoutBtn.addEventListener('click', async () => {
+            if (cart.length === 0) {
+                alert('Your cart is empty. Please add items before checking out.');
+                return;
+            }
+
+            await fetchShippingOptions();
+            renderCheckoutModal();
+            checkoutModal.show();
+        });
+
+        shippingOptionsList.addEventListener('change', (e) => {
+            const selectedId = parseInt(e.target.value, 10);
+            selectedShippingOption = shippingOptions.find(opt => opt.id === selectedId);
+            updateTotal();
+        });
+        
+        placeOrderBtn.addEventListener('click', async () => {
+            if (!selectedShippingOption) {
+                alert('Please select a shipping option.');
+                return;
+            }
+
+            const dummyUserId = 1;
+            const cartAsMap = cart.reduce((map, item) => {
+                map[item.id] = item.quantity;
+                return map;
+            }, {});
+
+            try {
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userId: dummyUserId,
+                        shippingOptionId: selectedShippingOption.id,
+                        cart: cartAsMap
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Order placed successfully!');
+                    checkoutModal.hide();
+                    window.setCart([]);
+                } else {
+                    const error = await response.json();
+                    alert('Failed to place order: ' + (error.message || 'An error occurred.'));
+                }
+            } catch (error) {
+                console.error('Error placing order:', error);
+                alert('An error occurred while placing the order.');
+            }
+        });
+        
+        // --- DEALS BUTTON LOGIC ---
+        dealsNavLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Highlight the active nav link
+            homeNavLink.classList.remove('active');
+            dealsNavLink.classList.add('active');
+            
+            // Filter locally and render
+            const deals = allProducts.filter(p => p.onSale);
+            renderProducts(deals);
+            
+            // Update the section title
+            productSectionTitle.textContent = "Deals & Promotions";
+            
+            // Reset filters
+            searchInput.value = '';
+            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+        });
+        
+        homeNavLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Highlight the active nav link
+            homeNavLink.classList.add('active');
+            dealsNavLink.classList.remove('active');
+            
+            // Render all products
+            renderProducts(allProducts);
+            
+            // Update the section title
+            productSectionTitle.textContent = "Featured Products";
+            
+            // Reset filters
+            searchInput.value = '';
+            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+        });
+    };
+    
+    // Create a separate function for fetching all products to be reused.
+    const initializeProducts = async () => {
+        try {
+            loadingSpinner.style.display = 'block';
+            const response = await fetch('/api/products');
+            if (!response.ok) throw new Error('Network response was not ok');
+            allProducts = await response.json();
+            renderProducts(allProducts);
+            renderCategories(allProducts);
+        } catch (error) {
+            console.error('Failed to fetch initial data:', error);
+            productGrid.innerHTML = '<p class="text-danger text-center">Could not load products. Please try again later.</p>';
+        } finally {
+            loadingSpinner.style.display = 'none';
+        }
     };
 
     // --- INITIAL FETCH & RENDER ---
     const initialize = async () => {
         window.loadCart();
-        if (loadingSpinner) loadingSpinner.style.display = 'block';
-        try {
-            const response = await fetch('/api/products');
-            if (!response.ok) throw new Error('Network response was not ok');
-            allProducts = await response.json();
-
-            renderProducts(allProducts);
-            renderCategories(allProducts);
-            setupEventListeners();
-        } catch (error) {
-            console.error('Failed to fetch initial data:', error);
-            productGrid.innerHTML = '<p class="text-danger text-center">Could not load products. Please try again later.</p>';
-        } finally {
-            if (loadingSpinner) loadingSpinner.style.display = 'none';
-        }
+        await initializeProducts();
+        setupEventListeners();
     };
 
     initialize();

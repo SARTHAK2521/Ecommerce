@@ -1,7 +1,11 @@
 package com.example.ecommerce.config;
 
+import com.example.ecommerce.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,30 +23,27 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationManager authenticationManager(
+            UserService userDetailsService,
+            PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(authenticationProvider);
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity in this project
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Allow access to all static resources (CSS, JS, images)
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                // Allow access to public pages
                 .requestMatchers("/", "/index.html", "/login.html", "/product.html").permitAll()
-                // Allow access to public API endpoints
                 .requestMatchers("/api/products/**", "/api/users/register", "/api/users/login").permitAll()
-                // IMPORTANT: Only allow users with the 'ADMIN' role to access the admin page
                 .requestMatchers("/admin.html").hasRole("ADMIN")
-                // Require authentication for any other request
                 .anyRequest().authenticated()
             )
-            .formLogin(form -> form
-                // Specify the URL for our custom login page
-                .loginPage("/login.html")
-                // The URL where the login form will be submitted to
-                .loginProcessingUrl("/login") 
-                // The URL to redirect to after a successful login
-                .defaultSuccessUrl("/index.html", true)
-                .permitAll()
-            )
+            .formLogin(form -> form.disable())
             .logout(logout -> logout
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .permitAll()

@@ -5,6 +5,10 @@ import com.example.ecommerce.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -13,11 +17,20 @@ import java.util.Optional;
 
 /**
  * A simple helper class to map the login request JSON body.
- * This avoids needing to create a separate file for a simple data structure.
  */
 class LoginRequest {
     public String username;
     public String password;
+}
+
+/**
+ * DTO to send back a cleaner response after login.
+ */
+class LoginResponse {
+    public Long id;
+    public String username;
+    public String email;
+    public String role;
 }
 
 @RestController
@@ -26,6 +39,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     /**
      * READ: Endpoint to get a list of all users.
@@ -121,18 +137,32 @@ public class UserController {
     }
 
     /**
-     * AUTHENTICATE: Endpoint to handle user login.
+     * AUTHENTICATE: Endpoint to handle user login, now integrated with Spring Security session.
      * @param loginRequest The login credentials from the request body.
      * @return A ResponseEntity with the authenticated user's data or an unauthorized error.
      */
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
-        Optional<User> optionalUser = userService.authenticate(loginRequest.username, loginRequest.password);
-        if (optionalUser.isPresent()) {
-            User authenticatedUser = optionalUser.get();
-            authenticatedUser.setPassword(null);
-            return ResponseEntity.ok(authenticatedUser);
-        } else {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.username, loginRequest.password)
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            Optional<User> optionalUser = userService.findByUsername(loginRequest.username);
+            if (optionalUser.isPresent()) {
+                User authenticatedUser = optionalUser.get();
+                LoginResponse response = new LoginResponse();
+                response.id = authenticatedUser.getId();
+                response.username = authenticatedUser.getUsername();
+                response.email = authenticatedUser.getEmail();
+                response.role = authenticatedUser.getRole();
+
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            }
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }
     }

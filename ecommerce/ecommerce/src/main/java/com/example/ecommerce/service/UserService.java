@@ -3,6 +3,8 @@ package com.example.ecommerce.service;
 import com.example.ecommerce.model.User;
 import com.example.ecommerce.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     @Autowired
     private UserRepository userRepository;
@@ -64,6 +66,26 @@ public class UserService {
     }
 
     /**
+     * CREATE: Creates a user with a specified role.
+     * @param user The User object to be created.
+     * @param role The role to assign to the user (e.g., "ROLE_ADMIN", "ROLE_USER").
+     * @return the newly created user (without the password).
+     * @throws RuntimeException if the username or email is already taken.
+     */
+    public User createUser(User user, String role) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already taken");
+        }
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already registered");
+        }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(role);
+        return userRepository.save(user);
+    }
+
+    /**
      * UPDATE: Updates an existing user's details.
      * @param id The ID of the user to update.
      * @param userDetails The new user data.
@@ -96,6 +118,12 @@ public class UserService {
             throw new RuntimeException("User not found with id: " + id);
         }
         userRepository.deleteById(id);
+    }
+
+    @Override
+    public User loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
     }
 
     /**
