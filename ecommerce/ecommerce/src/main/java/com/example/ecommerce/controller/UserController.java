@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 /**
  * A simple helper class to map the login request JSON body.
  * This avoids needing to create a separate file for a simple data structure.
@@ -31,9 +33,10 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
-            User registeredUser = userService.registerNewUser(user);
+            // CORRECTED: The method name is createUser, not registerNewUser.
+            User registeredUser = userService.createUser(user);
             // Important: Do not send the password back in the response for security
-            registeredUser.setPassword(null); 
+            registeredUser.setPassword(null);
             return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
         } catch (Exception e) {
             // Return a Bad Request status with the error message (e.g., "Username already exists")
@@ -48,12 +51,15 @@ public class UserController {
      */
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
-        try {
-            User authenticatedUser = userService.authenticate(loginRequest.username, loginRequest.password);
+        // CORRECTED: Handle the Optional<User> returned by the service.
+        Optional<User> optionalUser = userService.authenticate(loginRequest.username, loginRequest.password);
+
+        if (optionalUser.isPresent()) {
+            User authenticatedUser = optionalUser.get();
             // On successful login, return user data (without the password)
             authenticatedUser.setPassword(null);
             return ResponseEntity.ok(authenticatedUser);
-        } catch (Exception e) {
+        } else {
             // For security, always return a generic "Unauthorized" status for any login failure
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
         }

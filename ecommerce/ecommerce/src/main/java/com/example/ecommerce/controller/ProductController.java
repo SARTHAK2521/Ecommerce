@@ -1,41 +1,82 @@
 package com.example.ecommerce.controller;
 
 import com.example.ecommerce.model.Product;
-import com.example.ecommerce.service.ProductService; // Import the service
+import com.example.ecommerce.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
 
     @Autowired
-    private ProductService productService; // Use ProductService instead of repository
+    private ProductService productService;
 
-    // Get all products
+    /**
+     * READ: Handles GET requests to /api/products to fetch all products.
+     * @return A list of all products.
+     */
     @GetMapping
     public List<Product> getAllProducts() {
         return productService.findAllProducts();
     }
-    
-    // GET a single product by its ID
+
+    /**
+     * READ: Handles GET requests to /api/products/{id} to fetch a single product.
+     * @param id The ID of the product to retrieve.
+     * @return A ResponseEntity containing the product if found (200 OK), or 404 Not Found.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        Optional<Product> product = productService.findProductById(id);
-        // If product is found, return 200 OK with the product. Otherwise, return 404 Not Found.
-        return product.map(ResponseEntity::ok)
-                      .orElseGet(() -> ResponseEntity.notFound().build());
+        return productService.findProductById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // Create a new product
+    /**
+     * CREATE: Handles POST requests to /api/products to add a new product.
+     * @param product The product data from the request body.
+     * @return A ResponseEntity containing the newly created product with a 201 Created status.
+     */
     @PostMapping
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {
         Product savedProduct = productService.saveProduct(product);
         return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
     }
+
+    /**
+     * UPDATE: Handles PUT requests to /api/products/{id} to update an existing product.
+     * @param id The ID of the product to update.
+     * @param productDetails The new product data from the request body.
+     * @return A ResponseEntity containing the updated product if successful (200 OK), or 404 Not Found.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product productDetails) {
+        try {
+            Product updatedProduct = productService.updateProduct(id, productDetails);
+            return ResponseEntity.ok(updatedProduct);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * DELETE: Handles DELETE requests to /api/products/{id} to remove a product.
+     * @param id The ID of the product to delete.
+     * @return A ResponseEntity with 204 No Content if successful, or 404 Not Found.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        try {
+            productService.deleteProductById(id);
+            return ResponseEntity.noContent().build(); // Standard practice for successful DELETE
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
+

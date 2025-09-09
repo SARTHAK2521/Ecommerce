@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class UserService {
 
@@ -15,33 +17,29 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public User registerNewUser(User user) throws Exception {
+    public User createUser(User user) {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            throw new Exception("Username already exists");
+            throw new RuntimeException("Username already taken");
         }
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already registered");
+        }
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // Set the default role for any new user
+        user.setRole("ROLE_USER"); 
         return userRepository.save(user);
     }
 
-    // --- NEW METHOD ---
-    /**
-     * Authenticates a user by checking their username and password.
-     * @param username The user's username.
-     * @param rawPassword The plain-text password to check.
-     * @return The authenticated User object.
-     * @throws Exception if the user is not found or the password is incorrect.
-     */
-    public User authenticate(String username, String rawPassword) throws Exception {
-        // Find the user by their username
-        User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new Exception("User not found / Invalid credentials"));
-
-        // Check if the provided password matches the stored hashed password
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new Exception("Invalid credentials");
+    public Optional<User> authenticate(String username, String password) {
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                return Optional.of(user);
+            }
         }
-        
-        return user;
+        return Optional.empty();
     }
 }
 

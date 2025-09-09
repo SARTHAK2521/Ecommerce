@@ -1,13 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ELEMENT SELECTORS ---
     const productGrid = document.getElementById('product-grid');
     const categoryFilters = document.getElementById('category-filters');
     const searchInput = document.getElementById('search-input');
     const noResults = document.getElementById('no-results');
     const cartCounter = document.getElementById('cart-counter');
     const checkoutBtn = document.getElementById('checkout-btn');
-    const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
-    const navbar = document.querySelector('.navbar');
 
     let allProducts = [];
     let cart = [];
@@ -15,7 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- RENDER PRODUCTS ---
     const renderProducts = (productsToRender) => {
         productGrid.innerHTML = '';
-        noResults.style.display = productsToRender.length === 0 ? 'block' : 'none';
+        if (productsToRender.length === 0) {
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+        }
 
         productsToRender.forEach(product => {
             const isAdded = cart.some(item => item.id === product.id);
@@ -48,31 +49,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- RENDER CATEGORIES ---
     const renderCategories = (products) => {
         const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+        // UPDATED: Added new icons for Fashion, Home & Kitchen, and changed Clothing.
         const categoryIcons = {
-            'Electronics': 'bi-headphone', 'Books': 'bi-book', 'Clothing': 'bi-t-shirt',
-            'Fashion': 'bi-handbag-fill', 'Home Goods': 'bi-house-door', 
-            'Home & Kitchen': 'bi-cup-straw', 'Groceries': 'bi-basket', 'Default': 'bi-tag'
+            'Electronics': 'bi-headphone',
+            'Books': 'bi-book',
+            'Clothing': 'bi-t-shirt',
+            'Fashion': 'bi-handbag-fill',
+            'Home Goods': 'bi-house-door',
+            'Home & Kitchen': 'bi-cup-straw',
+            'Groceries': 'bi-basket',
+            'Default': 'bi-tag'
         };
 
-        categoryFilters.innerHTML = ''; // Clear previous
-        
-        const createCategoryCard = (categoryName, iconClass, isActive = false) => {
-            const card = document.createElement('div');
-            card.className = 'col-lg-2 col-md-3 col-4';
-            card.innerHTML = `
-                <div class="category-card ${isActive ? 'active' : ''}" data-category="${categoryName.toLowerCase()}">
-                    <i class="bi ${iconClass}"></i>
-                    <h5>${categoryName}</h5>
-                </div>
-            `;
-            return card;
-        };
-
-        categoryFilters.appendChild(createCategoryCard('All', 'bi-grid-fill', true));
-
+        categoryFilters.innerHTML = '';
         categories.forEach(category => {
             const icon = categoryIcons[category] || categoryIcons['Default'];
-            categoryFilters.appendChild(createCategoryCard(category, icon));
+            const categoryCard = document.createElement('div');
+            categoryCard.className = 'col-md-2 col-6';
+            categoryCard.innerHTML = `
+                <div class="category-card" data-category="${category}">
+                    <i class="bi ${icon}"></i>
+                    <h5>${category}</h5>
+                </div>
+            `;
+            categoryFilters.appendChild(categoryCard);
         });
     };
 
@@ -82,13 +82,9 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryFilters.addEventListener('click', (e) => {
             const card = e.target.closest('.category-card');
             if (card) {
-                document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                
                 const category = card.dataset.category;
-                renderProducts(
-                    category === 'all' ? allProducts : allProducts.filter(p => p.category.toLowerCase() === category)
-                );
+                const filteredProducts = allProducts.filter(p => p.category === category);
+                renderProducts(filteredProducts);
             }
         });
 
@@ -105,43 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add to Cart Clicks
         productGrid.addEventListener('click', e => {
-            const button = e.target.closest('.btn-add-to-cart');
-            if (button && !button.classList.contains('added')) {
-                const productId = parseInt(button.dataset.productId, 10);
+            if (e.target.classList.contains('btn-add-to-cart') && !e.target.classList.contains('added')) {
+                const productId = parseInt(e.target.dataset.productId, 10);
                 const productToAdd = allProducts.find(p => p.id === productId);
                 
                 if (productToAdd) {
                     cart.push({ ...productToAdd, quantity: 1 });
                     updateCartCounter();
-                    button.textContent = 'Added!';
-                    button.classList.remove('btn-dark');
-                    button.classList.add('btn-success', 'added');
+                    e.target.textContent = 'Added!';
+                    e.target.classList.remove('btn-dark');
+                    e.target.classList.add('btn-success', 'added');
                 }
             }
         });
 
         // Checkout Button Click
         checkoutBtn.addEventListener('click', handleCheckout);
-        
-        // Window Scroll Listener for Navbar shadow and Scroll to Top button
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 10) { 
-                navbar.classList.add('navbar-scrolled');
-            } else {
-                navbar.classList.remove('navbar-scrolled');
-            }
-
-            if (window.scrollY > 300) {
-                scrollToTopBtn.classList.add('show');
-            } else {
-                scrollToTopBtn.classList.remove('show');
-            }
-        });
-
-        // Scroll to Top Button Click
-        scrollToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
     };
     
     // --- CART LOGIC ---
@@ -154,26 +129,38 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Your cart is empty!");
             return;
         }
+
         const orderRequest = {
-            userId: 1, // Placeholder for now.
-            items: cart.map(item => ({ productId: item.id, quantity: item.quantity }))
+            userId: 1, // Hardcoded for now. Will be dynamic after login implementation.
+            items: cart.map(item => ({
+                productId: item.id,
+                quantity: item.quantity
+            }))
         };
+
         try {
             const response = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderRequest)
             });
-            if (!response.ok) throw new Error(await response.text());
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to place order');
+            }
+            
             alert('Order placed successfully!');
-            cart = [];
+            cart = []; // Clear the cart
             updateCartCounter();
-            renderProducts(allProducts); // Re-render to reset button states
+            renderProducts(allProducts); // Re-render to reset "Added!" buttons
+
         } catch (error) {
             console.error('Checkout error:', error);
-            alert(`Error placing order.`);
+            alert(`Error placing order: ${error.message}`);
         }
     };
+
 
     // --- INITIAL FETCH & RENDER ---
     const initialize = async () => {
