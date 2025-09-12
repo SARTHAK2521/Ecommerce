@@ -4,8 +4,12 @@ import com.example.ecommerce.model.Order;
 import com.example.ecommerce.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -31,5 +35,18 @@ public class OrderController {
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {
         Order newOrder = orderService.createOrder(orderRequest.getUserId(), orderRequest.getShippingOptionId(), orderRequest.getCart());
         return ResponseEntity.ok(newOrder);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<Order>> getMyOrders() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal() instanceof String) {
+            return ResponseEntity.status(401).build();
+        }
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        // Assuming your UserDetails is the User model itself
+        com.example.ecommerce.model.User currentUser = (com.example.ecommerce.model.User) userDetails;
+        List<Order> orders = orderService.findOrdersByUserId(currentUser.getId());
+        return ResponseEntity.ok(orders);
     }
 }

@@ -14,11 +14,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const dealsNavLink = document.getElementById('deals-nav-link');
     const homeNavLink = document.getElementById('home-nav-link');
     const productSectionTitle = document.getElementById('product-section-title');
+    const authLink = document.getElementById('auth-link');
+    const ordersLinkLi = document.getElementById('orders-link-li');
+    const logoutLinkLi = document.getElementById('logout-link-li');
+    const logoutBtn = document.getElementById('logout-btn');
 
     let allProducts = [];
     let cart = [];
     let shippingOptions = [];
     let selectedShippingOption = null;
+
+    // --- UTILITY FUNCTIONS ---
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        const toastElement = document.createElement('div');
+        toastElement.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastElement.setAttribute('role', 'alert');
+        toastElement.setAttribute('aria-live', 'assertive');
+        toastElement.setAttribute('aria-atomic', 'true');
+        toastElement.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        toastContainer.appendChild(toastElement);
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+    }
+
+    async function checkAuthAndGetUserId() {
+        const userId = sessionStorage.getItem('userId');
+        if (userId) {
+            authLink.classList.add('d-none');
+            ordersLinkLi.classList.remove('d-none');
+            logoutLinkLi.classList.remove('d-none');
+        } else {
+            authLink.classList.remove('d-none');
+            ordersLinkLi.classList.add('d-none');
+            logoutLinkLi.classList.add('d-none');
+        }
+    }
 
     // --- CART PERSISTENCE & SYNC (Shared functions) ---
     window.saveCart = () => {
@@ -47,6 +83,29 @@ document.addEventListener('DOMContentLoaded', () => {
         window.saveCart();
         window.updateCartCounter();
     };
+    
+    // Function to add a product to the cart
+    window.addToCart = (product, quantity = 1) => {
+        const cartItem = cart.find(item => item.id === product.id);
+        if (cartItem) {
+            if (cartItem.quantity + quantity > product.stockQuantity) {
+                 showToast(`Cannot add more. Only ${product.stockQuantity} left in stock.`, 'warning');
+                 return false;
+            }
+            cartItem.quantity += quantity;
+        } else {
+            if (quantity > product.stockQuantity) {
+                showToast(`Cannot add more. Only ${product.stockQuantity} left in stock.`, 'warning');
+                return false;
+            }
+            cart.push({ ...product, quantity: quantity });
+        }
+        window.saveCart();
+        window.updateCartCounter();
+        showToast(`${quantity} x ${product.name} added to cart!`);
+        return true;
+    };
+
 
     // --- RENDER PRODUCTS ---
     const renderProducts = (productsToRender) => {
@@ -198,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error fetching shipping options:', error);
+            showToast('Failed to load shipping options.', 'danger');
         }
     };
     
@@ -242,38 +302,41 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!addToCartContainer) return;
             
             const productId = parseInt(addToCartContainer.dataset.productId, 10);
-            let productToUpdate = cart.find(item => item.id === productId);
+            const product = allProducts.find(p => p.id === productId);
 
             if (e.target.classList.contains('btn-add-to-cart')) {
-                if (!productToUpdate) {
-                    const product = allProducts.find(p => p.id === productId);
-                    if (product) {
-                        cart.push({ ...product, quantity: 1 });
-                    }
-                }
+                window.addToCart(product);
+                renderProducts(allProducts);
             } else if (e.target.classList.contains('increment')) {
-                const productInStock = allProducts.find(p => p.id === productId).stockQuantity;
-                if (productToUpdate && productToUpdate.quantity < productInStock) {
-                    productToUpdate.quantity++;
-                } else if (productToUpdate && productToUpdate.quantity >= productInStock) {
-                     alert("You've reached the maximum available stock for this product.");
+                if (window.addToCart(product)) {
+                     const quantityDisplay = addToCartContainer.querySelector('.quantity-display');
+                     quantityDisplay.textContent = cart.find(item => item.id === productId).quantity;
                 }
             } else if (e.target.classList.contains('decrement')) {
-                if (productToUpdate && productToUpdate.quantity > 1) {
-                    productToUpdate.quantity--;
-                } else if (productToUpdate && productToUpdate.quantity === 1) {
+                 let productToUpdate = cart.find(item => item.id === productId);
+                 if (productToUpdate && productToUpdate.quantity > 1) {
+                     productToUpdate.quantity--;
+                     window.saveCart();
+                     window.updateCartCounter();
+                     const quantityDisplay = addToCartContainer.querySelector('.quantity-display');
+                     quantityDisplay.textContent = productToUpdate.quantity;
+                 } else if (productToUpdate && productToUpdate.quantity === 1) {
                     cart = cart.filter(item => item.id !== productId);
-                }
+                    window.saveCart();
+                    window.updateCartCounter();
+                    renderProducts(allProducts);
+                 }
             }
-
-            window.saveCart();
-            window.updateCartCounter();
-            renderProducts(allProducts);
         });
         
         checkoutBtn.addEventListener('click', async () => {
             if (cart.length === 0) {
-                alert('Your cart is empty. Please add items before checking out.');
+                showToast('Your cart is empty. Please add items before checking out.', 'warning');
+                return;
+            }
+            if (!sessionStorage.getItem('userId')) {
+                showToast('You must be logged in to place an order.', 'danger');
+                setTimeout(() => window.location.href = '/login.html', 2000);
                 return;
             }
 
@@ -290,11 +353,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         placeOrderBtn.addEventListener('click', async () => {
             if (!selectedShippingOption) {
-                alert('Please select a shipping option.');
+                showToast('Please select a shipping option.', 'warning');
                 return;
             }
 
-            const dummyUserId = 1;
+            const userId = sessionStorage.getItem('userId');
+            if (!userId) {
+                showToast('Authentication failed. Please log in again.', 'danger');
+                return;
+            }
+
             const cartAsMap = cart.reduce((map, item) => {
                 map[item.id] = item.quantity;
                 return map;
@@ -305,23 +373,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        userId: dummyUserId,
+                        userId: userId,
                         shippingOptionId: selectedShippingOption.id,
                         cart: cartAsMap
                     })
                 });
 
                 if (response.ok) {
-                    alert('Order placed successfully!');
+                    showToast('Order placed successfully!');
                     checkoutModal.hide();
                     window.setCart([]);
+                    renderProducts(allProducts);
                 } else {
                     const error = await response.json();
-                    alert('Failed to place order: ' + (error.message || 'An error occurred.'));
+                    showToast('Failed to place order: ' + (error.message || 'An error occurred.'), 'danger');
                 }
             } catch (error) {
                 console.error('Error placing order:', error);
-                alert('An error occurred while placing the order.');
+                showToast('An error occurred while placing the order.', 'danger');
             }
         });
         
@@ -362,6 +431,11 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.value = '';
             document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
         });
+
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.removeItem('userId');
+            window.location.href = '/login.html';
+        });
     };
     
     // Create a separate function for fetching all products to be reused.
@@ -376,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Failed to fetch initial data:', error);
             productGrid.innerHTML = '<p class="text-danger text-center">Could not load products. Please try again later.</p>';
+            showToast('Could not load products. Please try again later.', 'danger');
         } finally {
             loadingSpinner.style.display = 'none';
         }
@@ -384,6 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INITIAL FETCH & RENDER ---
     const initialize = async () => {
         window.loadCart();
+        checkAuthAndGetUserId();
         await initializeProducts();
         setupEventListeners();
     };

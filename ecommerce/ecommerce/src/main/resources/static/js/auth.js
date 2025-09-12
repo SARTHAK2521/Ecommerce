@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const showLoginLink = document.getElementById('show-login');
 
     const registerForm = document.getElementById('registerForm');
-    const loginForm = document.getElementById('loginForm');
-    
     const messageDiv = document.getElementById('message');
     const loginMessageDiv = document.getElementById('login-message');
 
@@ -51,36 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
             messageDiv.innerHTML = `<div class="alert alert-danger">An error occurred. Please try again.</div>`;
         }
     });
-    
-    // --- LOGIN FORM SUBMISSION ---
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const username = document.getElementById('loginUsername').value;
-        const password = document.getElementById('loginPassword').value;
-        
-        try {
-            const response = await fetch('/api/users/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            
-            if (response.ok) {
-                const user = await response.json();
-                // Check user role and redirect accordingly
-                if (user.role === 'ROLE_ADMIN') {
-                    window.location.href = '/admin.html';
-                } else {
-                    window.location.href = '/index.html';
-                }
-            } else {
-                // If login fails, show an error message
-                loginMessageDiv.innerHTML = `<div class="alert alert-danger">Invalid username or password.</div>`;
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            loginMessageDiv.innerHTML = `<div class="alert alert-danger">An error occurred. Please try again.</div>`;
-        }
-    });
+
+    // --- LOGIN MESSAGE DISPLAY (for Spring Security failures) ---
+    // Spring Security redirects back to the login page with a parameter on failure
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error')) {
+        loginMessageDiv.innerHTML = `<div class="alert alert-danger">Invalid username or password.</div>`;
+    }
 });

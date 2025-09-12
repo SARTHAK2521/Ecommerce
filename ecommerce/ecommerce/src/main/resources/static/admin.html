@@ -6,14 +6,31 @@
     <title>Admin Panel - Manage Products</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
 
-    <nav class="navbar navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">E-Store Admin Panel</a>
-            <a href="/" class="btn btn-outline-light">Back to Store</a>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top shadow-sm">
+        <div class="container py-2">
+            <a class="navbar-brand fw-bold fs-3 text-primary" href="/index.html">
+                <i class="bi bi-bag-check-fill me-2"></i>E-Store
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a href="/index.html" class="nav-link">Back to Store</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/logout" class="btn btn-outline-dark ms-lg-3">Logout</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
@@ -89,4 +106,3 @@
     <script src="/js/admin.js"></script>
 </body>
 </html>
-

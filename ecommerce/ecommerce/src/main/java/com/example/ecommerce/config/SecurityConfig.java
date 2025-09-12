@@ -39,13 +39,22 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/", "/index.html", "/login.html", "/product.html").permitAll()
-                .requestMatchers("/api/products/**", "/api/users/register", "/api/users/login").permitAll()
+                .requestMatchers("/api/products/**", "/api/users/register").permitAll()
                 .requestMatchers("/admin.html").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .formLogin(form -> form.disable())
+            .formLogin(form -> form
+                .loginPage("/login.html")
+                .loginProcessingUrl("/perform_login")
+                .defaultSuccessUrl("/index.html", true)
+                .failureUrl("/login.html?error=true")
+                .permitAll()
+            )
             .logout(logout -> logout
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/login.html")
+                .deleteCookies("JSESSIONID")
+                .invalidateHttpSession(true)
                 .permitAll()
             );
         return http.build();

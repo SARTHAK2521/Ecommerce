@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -57,5 +58,16 @@ public class OrderService {
 
         order.setTotalAmount(subtotalAmount + shippingOption.getCost());
         return orderRepository.save(order);
+    }
+
+    /**
+     * READ: Retrieves a list of orders for a specific user.
+     * @param userId The ID of the user whose orders to retrieve.
+     * @return a list of all orders for the given user.
+     */
+    public List<Order> findOrdersByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        return orderRepository.findByUser(user);
     }
 }

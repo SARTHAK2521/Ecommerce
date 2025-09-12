@@ -1,11 +1,41 @@
 body {
     background-color: #f8f9fa;
+    font-family: 'Inter', sans-serif;
+    color: #212529;
+}
+
+.navbar {
+    transition: box-shadow 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+main {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+}
+
+h1 {
+    font-weight: 700;
+    color: #009688;
+}
+
+.btn-primary {
+    background-color: #009688;
+    border-color: #009688;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #00695c;
+    border-color: #00695c;
 }
 
 .table-responsive {
     box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     border-radius: 8px;
     overflow: hidden;
+    background-color: #fff;
+    border: 1px solid #e0e4ea;
 }
 
 .table img {
@@ -13,6 +43,7 @@ body {
     height: 60px;
     object-fit: cover;
     border-radius: 4px;
+    border: 1px solid #dee2e6;
 }
 
 .table .btn {
@@ -27,3 +58,16 @@ body {
     border-top: 1px solid #dee2e6;
 }
 
+.modal-content {
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control {
+    border-radius: 8px;
+}
