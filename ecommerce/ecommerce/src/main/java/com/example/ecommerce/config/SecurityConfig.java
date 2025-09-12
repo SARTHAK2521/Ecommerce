@@ -38,9 +38,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                .requestMatchers("/", "/index.html", "/login.html", "/product.html").permitAll()
+                .requestMatchers("/", "/index.html", "/login.html", "/product.html", "/wishlist.html", "/my_orders.html").permitAll()
                 .requestMatchers("/api/products/**", "/api/users/register").permitAll()
-                .requestMatchers("/api/cart/**", "/api/orders/**", "/api/shipping/**").authenticated()
+                .requestMatchers("/api/cart/**", "/api/orders/**", "/api/shipping/**", "/api/wishlist/**", "/api/reviews/**").authenticated()
                 .requestMatchers("/admin.html").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

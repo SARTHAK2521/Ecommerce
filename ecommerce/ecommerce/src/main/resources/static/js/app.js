@@ -18,11 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const ordersLinkLi = document.getElementById('orders-link-li');
     const logoutLinkLi = document.getElementById('logout-link-li');
     const logoutBtn = document.getElementById('logout-btn');
-
+    
+    // New dark mode elements
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const darkModeIcon = document.getElementById('dark-mode-icon');
+    
     let allProducts = [];
     let cart = [];
     let shippingOptions = [];
     let selectedShippingOption = null;
+    let wishlistItems = new Set();
 
     // --- UTILITY FUNCTIONS ---
     function showToast(message, type = 'success') {
@@ -41,6 +46,70 @@ document.addEventListener('DOMContentLoaded', () => {
         toastContainer.appendChild(toastElement);
         const toast = new bootstrap.Toast(toastElement);
         toast.show();
+    }
+
+    // --- WISHLIST FUNCTIONS ---
+    async function toggleWishlist(productId) {
+        try {
+            const response = await fetch(`/api/wishlist/toggle/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                wishlistItems.clear();
+                if (data.isInWishlist) {
+                    wishlistItems.add(productId);
+                    showToast('Added to wishlist!', 'success');
+                } else {
+                    showToast('Removed from wishlist', 'info');
+                }
+                updateWishlistButtons();
+            } else if (response.status === 401) {
+                showToast('Please log in to use wishlist', 'warning');
+            } else {
+                showToast('Error updating wishlist', 'error');
+            }
+        } catch (error) {
+            console.error('Error toggling wishlist:', error);
+            showToast('Error updating wishlist', 'error');
+        }
+    }
+
+    async function loadWishlistStatus() {
+        try {
+            const response = await fetch('/api/wishlist');
+            if (response.ok) {
+                const wishlistData = await response.json();
+                wishlistItems.clear();
+                wishlistData.forEach(item => {
+                    wishlistItems.add(item.product.id);
+                });
+                updateWishlistButtons();
+            }
+        } catch (error) {
+            console.error('Error loading wishlist status:', error);
+        }
+    }
+
+    function updateWishlistButtons() {
+        document.querySelectorAll('.btn-wishlist').forEach(btn => {
+            const productId = parseInt(btn.dataset.productId);
+            const icon = btn.querySelector('i');
+            
+            if (wishlistItems.has(productId)) {
+                btn.classList.add('active');
+                icon.className = 'bi bi-heart-fill';
+                btn.title = 'Remove from wishlist';
+            } else {
+                btn.classList.remove('active');
+                icon.className = 'bi bi-heart';
+                btn.title = 'Add to wishlist';
+            }
+        });
     }
 
     async function checkAuthenticationAndSetUserId() {
@@ -246,6 +315,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>` :
                                 `<button class="btn btn-primary btn-add-to-cart w-100 fw-semibold" aria-label="Add ${product.name} to cart" ${isOutOfStock ? 'disabled' : ''}><i class="bi bi-cart-plus me-1"></i>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>`
                             }
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-outline-danger btn-wishlist flex-grow-1" data-product-id="${product.id}" title="Add to wishlist">
+                                    <i class="bi bi-heart"></i>
+                                </button>
+                                <a href="/product.html?id=${product.id}" class="btn btn-outline-primary flex-grow-1" title="View details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -374,9 +451,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 (p.category && p.category.toLowerCase().includes(searchTerm))
             );
             renderProducts(filteredProducts);
+            if (filteredProducts.length > 0) {
+                productGrid.scrollIntoView({ behavior: 'smooth' });
+            }
         });
 
         productGrid.addEventListener('click', async e => {
+            // Handle wishlist buttons
+            if (e.target.closest('.btn-wishlist')) {
+                const wishlistBtn = e.target.closest('.btn-wishlist');
+                const productId = parseInt(wishlistBtn.dataset.productId, 10);
+                await toggleWishlist(productId);
+                return;
+            }
+
+            // Handle cart buttons
             const addToCartContainer = e.target.closest('.add-to-cart-container');
             if (!addToCartContainer) return;
             
@@ -533,12 +622,42 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingSpinner.style.display = 'none';
         }
     };
+    
+    // --- DARK MODE LOGIC ---
+    const setupDarkMode = () => {
+        const currentMode = localStorage.getItem('theme');
+        if (currentMode === 'dark') {
+            document.body.classList.add('dark-mode');
+            darkModeIcon.classList.remove('bi-moon-fill');
+            darkModeIcon.classList.add('bi-sun-fill');
+        } else {
+            document.body.classList.remove('dark-mode');
+            darkModeIcon.classList.remove('bi-sun-fill');
+            darkModeIcon.classList.add('bi-moon-fill');
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            if (document.body.classList.contains('dark-mode')) {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                darkModeIcon.classList.remove('bi-sun-fill');
+                darkModeIcon.classList.add('bi-moon-fill');
+            } else {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                darkModeIcon.classList.remove('bi-moon-fill');
+                darkModeIcon.classList.add('bi-sun-fill');
+            }
+        });
+    };
 
     // --- INITIAL FETCH & RENDER ---
     const initialize = async () => {
         await initializeProducts();
         await checkAuthAndGetUserId();
+        await loadWishlistStatus();
         setupEventListeners();
+        setupDarkMode();
     };
 
     initialize();

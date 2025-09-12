@@ -2,6 +2,115 @@ body {
     background-color: #f8f9fa;
     font-family: 'Inter', sans-serif;
     color: #212529;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Dark Mode Styles for Admin */
+body.dark-mode {
+    background-color: #1A202C;
+    color: #E8EAF6;
+}
+
+body.dark-mode .navbar {
+    background-color: #1A202C;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    border-bottom: 1px solid #4A5568;
+}
+
+body.dark-mode .navbar .nav-link {
+    color: #E8EAF6 !important;
+}
+
+body.dark-mode .navbar .nav-link:hover {
+    color: #64B5F6 !important;
+}
+
+body.dark-mode .navbar .form-control {
+    background-color: #2D3748;
+    color: #E8EAF6;
+    border-color: #4A5568;
+}
+
+body.dark-mode .navbar .form-control:focus {
+    background-color: #2D3748;
+    color: #E8EAF6;
+    border-color: #64B5F6;
+    box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.25);
+}
+
+body.dark-mode .navbar .btn {
+    background-color: #64B5F6;
+    border-color: #64B5F6;
+    color: #1A202C;
+}
+
+body.dark-mode .navbar .btn:hover {
+    background-color: #42A5F5;
+    border-color: #42A5F5;
+}
+
+body.dark-mode .table-responsive {
+    background-color: #2D3748;
+    border-color: #4A5568;
+}
+
+body.dark-mode .table {
+    color: #E8EAF6;
+}
+
+body.dark-mode .table th {
+    background-color: #4A5568;
+    color: #E8EAF6;
+    border-color: #4A5568;
+}
+
+body.dark-mode .table td {
+    border-color: #4A5568;
+}
+
+body.dark-mode .modal-content {
+    background-color: #2D3748;
+    color: #E8EAF6;
+    border-color: #4A5568;
+}
+
+body.dark-mode .modal-header {
+    border-bottom-color: #4A5568;
+}
+
+body.dark-mode .modal-footer {
+    border-top-color: #4A5568;
+}
+
+body.dark-mode .form-control {
+    background-color: #4A5568;
+    border-color: #4A5568;
+    color: #E8EAF6;
+}
+
+body.dark-mode .form-control:focus {
+    background-color: #4A5568;
+    border-color: #64B5F6;
+    color: #E8EAF6;
+    box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.25);
+}
+
+body.dark-mode .form-label {
+    color: #E8EAF6;
+}
+
+body.dark-mode h1 {
+    color: #64B5F6;
+}
+
+body.dark-mode .btn-primary {
+    background-color: #64B5F6;
+    border-color: #64B5F6;
+}
+
+body.dark-mode .btn-primary:hover {
+    background-color: #42A5F5;
+    border-color: #42A5F5;
 }
 
 .navbar {
