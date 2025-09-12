@@ -22,18 +22,15 @@ public class OrderController {
     static class OrderRequest {
         private Long userId;
         private Long shippingOptionId;
-        private Map<Long, Integer> cart;
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
         public Long getShippingOptionId() { return shippingOptionId; }
         public void setShippingOptionId(Long shippingOptionId) { this.shippingOptionId = shippingOptionId; }
-        public Map<Long, Integer> getCart() { return cart; }
-        public void setCart(Map<Long, Integer> cart) { this.cart = cart; }
     }
 
     @PostMapping
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {
-        Order newOrder = orderService.createOrder(orderRequest.getUserId(), orderRequest.getShippingOptionId(), orderRequest.getCart());
+        Order newOrder = orderService.createOrder(orderRequest.getUserId(), orderRequest.getShippingOptionId());
         return ResponseEntity.ok(newOrder);
     }
 

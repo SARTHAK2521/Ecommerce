@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const registerForm = document.getElementById('registerForm');
     const messageDiv = document.getElementById('message');
-    const loginMessageDiv = document.getElementById('login-message');
+    const errorAlert = document.getElementById('error-alert');
 
     // --- FORM SWITCHING LOGIC ---
     showSignupLink.addEventListener('click', (e) => {
@@ -51,9 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- LOGIN MESSAGE DISPLAY (for Spring Security failures) ---
-    // Spring Security redirects back to the login page with a parameter on failure
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('error')) {
-        loginMessageDiv.innerHTML = `<div class="alert alert-danger">Invalid username or password.</div>`;
+        errorAlert.style.display = 'block';
     }
 });

@@ -43,6 +43,38 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.show();
     }
 
+    async function checkAuthenticationAndSetUserId() {
+        try {
+            const response = await fetch('/api/users/me');
+            if (response.ok) {
+                const user = await response.json();
+                sessionStorage.setItem('userId', user.id);
+                sessionStorage.setItem('username', user.username);
+                sessionStorage.setItem('userRole', user.role);
+                authLink.classList.add('d-none');
+                ordersLinkLi.classList.remove('d-none');
+                logoutLinkLi.classList.remove('d-none');
+            } else {
+                sessionStorage.removeItem('userId');
+                sessionStorage.removeItem('username');
+                sessionStorage.removeItem('userRole');
+                authLink.classList.remove('d-none');
+                ordersLinkLi.classList.add('d-none');
+                logoutLinkLi.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error('Error checking auth:', error);
+            sessionStorage.removeItem('userId');
+            sessionStorage.removeItem('username');
+            sessionStorage.removeItem('userRole');
+            authLink.classList.remove('d-none');
+            ordersLinkLi.classList.add('d-none');
+            logoutLinkLi.classList.add('d-none');
+        } finally {
+            await fetchCart();
+        }
+    }
+
     async function checkAuthAndGetUserId() {
         const userId = sessionStorage.getItem('userId');
         if (userId) {
@@ -50,63 +82,105 @@ document.addEventListener('DOMContentLoaded', () => {
             ordersLinkLi.classList.remove('d-none');
             logoutLinkLi.classList.remove('d-none');
         } else {
-            authLink.classList.remove('d-none');
-            ordersLinkLi.classList.add('d-none');
-            logoutLinkLi.classList.add('d-none');
+            await checkAuthenticationAndSetUserId();
         }
     }
 
-    // --- CART PERSISTENCE & SYNC (Shared functions) ---
-    window.saveCart = () => {
-        localStorage.setItem('cart', JSON.stringify(cart));
-    };
-
-    window.loadCart = () => {
-        const savedCart = localStorage.getItem('cart');
-        if (savedCart) {
-            cart = JSON.parse(savedCart);
+    // --- CART MANAGEMENT (UPDATED) ---
+    async function fetchCart() {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            cart = [];
+            return;
         }
-        window.updateCartCounter();
-    };
+        try {
+            const response = await fetch(`/api/cart/${userId}`);
+            if (response.ok) {
+                const cartData = await response.json();
+                cart = cartData.cartItems.map(item => ({
+                    id: item.product.id,
+                    name: item.product.name,
+                    price: item.product.price,
+                    originalPrice: item.product.originalPrice,
+                    imageUrl: item.product.imageUrl,
+                    category: item.product.category,
+                    onSale: item.product.onSale,
+                    stockQuantity: item.product.stockQuantity,
+                    quantity: item.quantity
+                }));
+            } else {
+                cart = [];
+                // Only show toast if the error is not a 404 (cart not found)
+                if (response.status !== 404) {
+                    showToast('Failed to load cart.', 'danger');
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching cart:', error);
+            showToast('Failed to load cart.', 'danger');
+            cart = [];
+        } finally {
+            updateCartCounter();
+            renderProducts(allProducts);
+        }
+    }
 
-    window.updateCartCounter = () => {
+    function updateCartCounter() {
         const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
         if (cartCounter) {
             cartCounter.textContent = totalItems;
             cartCounter.setAttribute('aria-label', `Cart with ${totalItems} items`);
         }
-    };
+    }
 
-    window.getCart = () => cart;
-    window.setCart = (newCart) => {
-        cart = newCart;
-        window.saveCart();
-        window.updateCartCounter();
-    };
+    async function updateCartUI(updatedCart) {
+        cart = updatedCart.cartItems.map(item => ({
+            id: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            originalPrice: item.product.originalPrice,
+            imageUrl: item.product.imageUrl,
+            category: item.product.category,
+            onSale: item.product.onSale,
+            stockQuantity: item.product.stockQuantity,
+            quantity: item.quantity
+        }));
+        updateCartCounter();
+        renderProducts(allProducts);
+    }
     
-    // Function to add a product to the cart
-    window.addToCart = (product, quantity = 1) => {
-        const cartItem = cart.find(item => item.id === product.id);
-        if (cartItem) {
-            if (cartItem.quantity + quantity > product.stockQuantity) {
-                 showToast(`Cannot add more. Only ${product.stockQuantity} left in stock.`, 'warning');
-                 return false;
-            }
-            cartItem.quantity += quantity;
-        } else {
-            if (quantity > product.stockQuantity) {
-                showToast(`Cannot add more. Only ${product.stockQuantity} left in stock.`, 'warning');
-                return false;
-            }
-            cart.push({ ...product, quantity: quantity });
+    async function addToCart(productId, quantity, productName) {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            showToast('You must be logged in to add products to cart.', 'danger');
+            return;
         }
-        window.saveCart();
-        window.updateCartCounter();
-        showToast(`${quantity} x ${product.name} added to cart!`);
-        return true;
-    };
 
+        try {
+            const response = await fetch(`/api/cart/${userId}/items`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: productId, quantity: quantity })
+            });
 
+            if (response.ok) {
+                const updatedCart = await response.json();
+                await updateCartUI(updatedCart);
+                if (quantity > 0) {
+                     showToast(`${quantity} x ${productName} added to cart!`);
+                } else if (quantity < 0) {
+                     showToast(`${productName} quantity updated in cart!`);
+                }
+            } else {
+                const error = await response.json();
+                showToast(error.message || 'Failed to add item to cart.', 'danger');
+            }
+        } catch (error) {
+            console.error('Add to cart error:', error);
+            showToast('An error occurred while adding to cart.', 'danger');
+        }
+    }
+    
     // --- RENDER PRODUCTS ---
     const renderProducts = (productsToRender) => {
         if (loadingSpinner) loadingSpinner.style.display = 'none';
@@ -297,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderProducts(filteredProducts);
         });
 
-        productGrid.addEventListener('click', e => {
+        productGrid.addEventListener('click', async e => {
             const addToCartContainer = e.target.closest('.add-to-cart-container');
             if (!addToCartContainer) return;
             
@@ -305,38 +379,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = allProducts.find(p => p.id === productId);
 
             if (e.target.classList.contains('btn-add-to-cart')) {
-                window.addToCart(product);
-                renderProducts(allProducts);
+                await addToCart(productId, 1, product.name);
             } else if (e.target.classList.contains('increment')) {
-                if (window.addToCart(product)) {
-                     const quantityDisplay = addToCartContainer.querySelector('.quantity-display');
-                     quantityDisplay.textContent = cart.find(item => item.id === productId).quantity;
-                }
+                await addToCart(productId, 1, product.name);
             } else if (e.target.classList.contains('decrement')) {
-                 let productToUpdate = cart.find(item => item.id === productId);
-                 if (productToUpdate && productToUpdate.quantity > 1) {
-                     productToUpdate.quantity--;
-                     window.saveCart();
-                     window.updateCartCounter();
-                     const quantityDisplay = addToCartContainer.querySelector('.quantity-display');
-                     quantityDisplay.textContent = productToUpdate.quantity;
-                 } else if (productToUpdate && productToUpdate.quantity === 1) {
-                    cart = cart.filter(item => item.id !== productId);
-                    window.saveCart();
-                    window.updateCartCounter();
-                    renderProducts(allProducts);
-                 }
+                 const cartItem = cart.find(item => item.id === productId);
+                if (cartItem && cartItem.quantity > 0) {
+                     await addToCart(productId, -1, product.name);
+                }
             }
         });
         
         checkoutBtn.addEventListener('click', async () => {
-            if (cart.length === 0) {
-                showToast('Your cart is empty. Please add items before checking out.', 'warning');
-                return;
-            }
-            if (!sessionStorage.getItem('userId')) {
+            const userId = sessionStorage.getItem('userId');
+            if (!userId) {
                 showToast('You must be logged in to place an order.', 'danger');
                 setTimeout(() => window.location.href = '/login.html', 2000);
+                return;
+            }
+            if (cart.length === 0) {
+                showToast('Your cart is empty. Please add items before checking out.', 'warning');
                 return;
             }
 
@@ -363,27 +425,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const cartAsMap = cart.reduce((map, item) => {
-                map[item.id] = item.quantity;
-                return map;
-            }, {});
-
             try {
                 const response = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         userId: userId,
-                        shippingOptionId: selectedShippingOption.id,
-                        cart: cartAsMap
+                        shippingOptionId: selectedShippingOption.id
                     })
                 });
 
                 if (response.ok) {
                     showToast('Order placed successfully!');
                     checkoutModal.hide();
-                    window.setCart([]);
+                    cart = [];
+                    updateCartCounter();
                     renderProducts(allProducts);
+                    // Clear the server-side cart after a successful order
+                    const cartResponse = await fetch(`/api/cart/${userId}`, { method: 'DELETE' });
+                    if (!cartResponse.ok) {
+                         console.error('Failed to clear cart after order.');
+                    }
                 } else {
                     const error = await response.json();
                     showToast('Failed to place order: ' + (error.message || 'An error occurred.'), 'danger');
@@ -395,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // --- DEALS BUTTON LOGIC ---
-        dealsNavLink.addEventListener('click', (e) => {
+        dealsNavLink.addEventListener('click', async (e) => {
             e.preventDefault();
             
             // Highlight the active nav link
@@ -414,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
         });
         
-        homeNavLink.addEventListener('click', (e) => {
+        homeNavLink.addEventListener('click', async (e) => {
             e.preventDefault();
             
             // Highlight the active nav link
@@ -432,9 +494,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
         });
 
-        logoutBtn.addEventListener('click', () => {
-            sessionStorage.removeItem('userId');
-            window.location.href = '/login.html';
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                 const response = await fetch('/logout', { method: 'POST' });
+                 if (response.ok) {
+                     sessionStorage.removeItem('userId');
+                     sessionStorage.removeItem('username');
+                     sessionStorage.removeItem('userRole');
+                     cart = [];
+                     window.location.href = '/login.html';
+                 }
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login.html';
+            }
         });
     };
     
@@ -458,9 +531,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIAL FETCH & RENDER ---
     const initialize = async () => {
-        window.loadCart();
-        checkAuthAndGetUserId();
         await initializeProducts();
+        await checkAuthAndGetUserId();
         setupEventListeners();
     };
 

@@ -18,17 +18,20 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private ProductRepository productRepository;
+    private CartRepository cartRepository;
     @Autowired
     private ShippingOptionRepository shippingOptionRepository;
 
     @Transactional
-    public Order createOrder(Long userId, Long shippingOptionId, Map<Long, Integer> cart) {
+    public Order createOrder(Long userId, Long shippingOptionId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         ShippingOption shippingOption = shippingOptionRepository.findById(shippingOptionId)
                 .orElseThrow(() -> new RuntimeException("Shipping option not found with id: " + shippingOptionId));
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
 
         Order order = new Order();
         order.setUser(user);
@@ -38,22 +41,16 @@ public class OrderService {
 
         double subtotalAmount = 0.0;
 
-        for (Map.Entry<Long, Integer> entry : cart.entrySet()) {
-            Long productId = entry.getKey();
-            Integer quantity = entry.getValue();
-
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
-
+        for (CartItem cartItem : cart.getCartItems()) {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
-            orderItem.setProduct(product);
-            orderItem.setQuantity(quantity);
-            orderItem.setPriceAtPurchase(product.getPrice());
+            orderItem.setProduct(cartItem.getProduct());
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setPriceAtPurchase(cartItem.getProduct().getPrice());
 
             order.getOrderItems().add(orderItem);
 
-            subtotalAmount += product.getPrice() * quantity;
+            subtotalAmount += cartItem.getProduct().getPrice() * cartItem.getQuantity();
         }
 
         order.setTotalAmount(subtotalAmount + shippingOption.getCost());

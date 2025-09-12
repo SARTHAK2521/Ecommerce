@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const ordersLinkLi = document.getElementById('orders-link-li');
     const logoutLinkLi = document.getElementById('logout-link-li');
     const logoutBtn = document.getElementById('logout-btn');
+    
+    let allProducts = [];
 
     function showToast(message, type = 'success') {
         const toastContainer = document.getElementById('toast-container');
@@ -28,54 +30,115 @@ document.addEventListener('DOMContentLoaded', () => {
         const toast = new bootstrap.Toast(toastElement);
         toast.show();
     }
-
-    window.updateCartCounter = () => {
-        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
-        if (cartCounter) {
-            cartCounter.textContent = totalItems;
-            cartCounter.setAttribute('aria-label', `Cart with ${totalItems} items`);
-        }
-    };
     
-    window.addToCart = (product, quantity = 1) => {
-        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        const cartItem = cart.find(item => item.id === product.id);
-        if (cartItem) {
-            if (cartItem.quantity + quantity > product.stockQuantity) {
-                 showToast(`Cannot add more. Only ${product.stockQuantity} left in stock.`, 'warning');
-                 return false;
-            }
-            cartItem.quantity += quantity;
-        } else {
-            if (quantity > product.stockQuantity) {
-                showToast(`Cannot add more. Only ${product.stockQuantity} left in stock.`, 'warning');
-                return false;
-            }
-            cart.push({ ...product, quantity: quantity });
+    async function updateCartCounter() {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            cartCounter.textContent = '0';
+            return;
         }
-        localStorage.setItem('cart', JSON.stringify(cart));
-        window.updateCartCounter();
-        showToast(`${quantity} x ${product.name} added to cart!`);
-        return true;
-    };
 
-    async function checkAuthAndGetUserId() {
+        try {
+            const response = await fetch(`/api/cart/${userId}`);
+            if (response.ok) {
+                const cartData = await response.json();
+                const totalItems = cartData.cartItems.reduce((total, item) => total + item.quantity, 0);
+                cartCounter.textContent = totalItems;
+            } else {
+                cartCounter.textContent = '0';
+            }
+        } catch (error) {
+            console.error('Error fetching cart:', error);
+            cartCounter.textContent = '0';
+        }
+    }
+
+
+    // New function to handle cart from the backend
+    async function addToCart(product, quantity = 1) {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            showToast('You must be logged in to add products to cart.', 'danger');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/cart/${userId}/items`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: product.id, quantity: quantity })
+            });
+
+            if (response.ok) {
+                await updateCartCounter();
+                showToast(`${quantity} x ${product.name} added to cart!`);
+            } else {
+                const error = await response.json();
+                showToast(error.message || 'Failed to add item to cart.', 'danger');
+            }
+        } catch (error) {
+            console.error('Add to cart error:', error);
+            showToast('An error occurred while adding to cart.', 'danger');
+        }
+    }
+
+
+    async function checkAuthenticationAndSetUserId() {
+        try {
+            const response = await fetch('/api/users/me');
+            if (response.ok) {
+                const user = await response.json();
+                sessionStorage.setItem('userId', user.id);
+                sessionStorage.setItem('username', user.username);
+                sessionStorage.setItem('userRole', user.role);
+                authLink.classList.add('d-none');
+                ordersLinkLi.classList.remove('d-none');
+                logoutLinkLi.classList.remove('d-none');
+            } else {
+                sessionStorage.removeItem('userId');
+                sessionStorage.removeItem('username');
+                sessionStorage.removeItem('userRole');
+                authLink.classList.remove('d-none');
+                ordersLinkLi.classList.add('d-none');
+                logoutLinkLi.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error('Error checking auth:', error);
+            sessionStorage.removeItem('userId');
+            sessionStorage.removeItem('username');
+            sessionStorage.removeItem('userRole');
+            authLink.classList.remove('d-none');
+            ordersLinkLi.classList.add('d-none');
+            logoutLinkLi.classList.add('d-none');
+        } finally {
+            await updateCartCounter();
+        }
+    }
+    
+    function checkAuthAndGetUserId() {
         const userId = sessionStorage.getItem('userId');
         if (userId) {
             authLink.classList.add('d-none');
             ordersLinkLi.classList.remove('d-none');
             logoutLinkLi.classList.remove('d-none');
         } else {
-            authLink.classList.remove('d-none');
-            ordersLinkLi.classList.add('d-none');
-            logoutLinkLi.classList.add('d-none');
+            checkAuthenticationAndSetUserId();
         }
     }
-    
-    logoutBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('userId');
-        window.location.href = '/login.html';
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+             const response = await fetch('/logout', { method: 'POST' });
+             if (response.ok) {
+                 sessionStorage.removeItem('userId');
+                 sessionStorage.removeItem('username');
+                 sessionStorage.removeItem('userRole');
+                 window.location.href = '/login.html';
+             }
+        } catch (error) {
+            console.error('Logout failed:', error);
+            window.location.href = '/login.html';
+        }
     });
 
     const fetchProductDetails = async () => {
@@ -95,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Product not found');
             }
             const product = await response.json();
+            allProducts = [product]; // Keep a local reference for addToCart
             renderProductDetails(product);
         } catch (error) {
             console.error('Error fetching product details:', error);
@@ -134,13 +198,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        document.getElementById('addToCartBtn').addEventListener('click', () => {
-            window.addToCart(product);
+        document.getElementById('addToCartBtn').addEventListener('click', async () => {
+            await addToCart(product, 1);
         });
     };
-    
+
     // Initial calls
-    window.updateCartCounter();
     checkAuthAndGetUserId();
     fetchProductDetails();
 });

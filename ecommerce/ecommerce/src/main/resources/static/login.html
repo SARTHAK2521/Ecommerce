@@ -35,10 +35,8 @@
 
     <div class="card auth-card">
         <div class="card-body">
-            <!-- Login Form (Visible by default) -->
             <div id="login-form">
                 <h3 class="text-center mb-4">Welcome Back!</h3>
-                <!-- The form action is set to Spring Security's login processing URL -->
                 <form id="loginForm" action="/perform_login" method="post">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="loginUsername" name="username" placeholder="Username" required>
@@ -48,7 +46,6 @@
                         <input type="password" class="form-control" id="loginPassword" name="password" placeholder="Password" required>
                         <label for="loginPassword">Password</label>
                     </div>
-                    <!-- Display error message if login fails -->
                     <div id="login-message" class="mb-3">
                         <div id="error-alert" class="alert alert-danger" style="display: none;">Invalid username or password.</div>
                     </div>
@@ -59,7 +56,6 @@
                 </p>
             </div>
 
-            <!-- Sign Up Form (Hidden by default) -->
             <div id="signup-form">
                 <h3 class="text-center mb-4">Create an Account</h3>
                 <form id="registerForm">
@@ -86,12 +82,5 @@
     </div>
 
     <script src="/js/auth.js"></script>
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasError = urlParams.get('error');
-        if (hasError) {
-            document.getElementById('error-alert').style.display = 'block';
-        }
-    </script>
 </body>
 </html>
