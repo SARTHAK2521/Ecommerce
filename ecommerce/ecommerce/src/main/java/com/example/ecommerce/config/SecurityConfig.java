@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/", "/index.html", "/login.html", "/product.html").permitAll()
                 .requestMatchers("/api/products/**", "/api/users/register").permitAll()
+                .requestMatchers("/api/cart/**", "/api/orders/**", "/api/shipping/**").authenticated()
                 .requestMatchers("/admin.html").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

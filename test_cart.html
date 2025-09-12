@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cart Test</title>
+</head>
+<body>
+    <h1>Testing Cart Functionality</h1>
+    <button onclick="testCart()">Test Add to Cart</button>
+    <div id="result"></div>
+
+    <script>
+        async function testCart() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // First, try to get products
+                const productsResponse = await fetch('http://localhost:8080/api/products');
+                if (!productsResponse.ok) {
+                    resultDiv.innerHTML = '<p style="color: red;">Products API failed: ' + productsResponse.status + '</p>';
+                    return;
+                }
+                
+                const products = await productsResponse.json();
+                resultDiv.innerHTML = '<p style="color: green;">Products loaded: ' + products.length + ' items</p>';
+                
+                if (products.length > 0) {
+                    const productId = products[0].id;
+                    resultDiv.innerHTML += '<p>Testing cart with product ID: ' + productId + '</p>';
+                    
+                    // Try to add to cart (this should fail without authentication)
+                    const cartResponse = await fetch(`http://localhost:8080/api/cart/1/items`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ productId: productId, quantity: 1 })
+                    });
+                    
+                    if (cartResponse.ok) {
+                        resultDiv.innerHTML += '<p style="color: green;">Cart API working!</p>';
+                    } else {
+                        resultDiv.innerHTML += '<p style="color: orange;">Cart API returned: ' + cartResponse.status + ' (expected without auth)</p>';
+                    }
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

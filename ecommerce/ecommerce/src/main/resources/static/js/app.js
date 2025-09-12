@@ -153,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const userId = sessionStorage.getItem('userId');
         if (!userId) {
             showToast('You must be logged in to add products to cart.', 'danger');
+            setTimeout(() => window.location.href = '/login.html', 2000);
             return;
         }
 
@@ -171,6 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (quantity < 0) {
                      showToast(`${productName} quantity updated in cart!`);
                 }
+            } else if (response.status === 401) {
+                showToast('Session expired. Please log in again.', 'danger');
+                sessionStorage.clear();
+                setTimeout(() => window.location.href = '/login.html', 2000);
             } else {
                 const error = await response.json();
                 showToast(error.message || 'Failed to add item to cart.', 'danger');

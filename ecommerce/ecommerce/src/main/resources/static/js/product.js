@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         productDetailContainer.innerHTML = `
             <div class="col-md-6 text-center product-image-container">
-                <img src="${product.imageUrl}" alt="${product.name}" class="img-fluid" onerror="this.onerror=null;this.src='https://placehold.co/600x400?text=No+Image';">
+                <img src="${product.imageUrl}" class="img-fluid" onerror="this.onerror=null;this.src='https://placehold.co/600x400?text=No+Image';">
             </div>
             <div class="col-md-6 product-details">
                 <h6 class="text-uppercase text-primary fw-semibold">${product.category}</h6>
@@ -199,7 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         document.getElementById('addToCartBtn').addEventListener('click', async () => {
-            await addToCart(product, 1);
+            const product = allProducts.find(p => p.id === parseInt(new URLSearchParams(window.location.search).get('id')));
+            if(product) {
+                await addToCart(product, 1);
+            }
         });
     };
 

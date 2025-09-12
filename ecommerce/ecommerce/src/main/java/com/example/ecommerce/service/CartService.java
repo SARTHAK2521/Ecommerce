@@ -52,16 +52,26 @@ public class CartService {
         CartItem cartItem;
         if (existingCartItem.isPresent()) {
             cartItem = existingCartItem.get();
-            cartItem.setQuantity(cartItem.getQuantity() + quantity);
+            int newQuantity = cartItem.getQuantity() + quantity;
+            if (newQuantity <= 0) {
+                // Remove item if quantity becomes 0 or negative
+                cartItemRepository.delete(cartItem);
+                cart.getCartItems().remove(cartItem);
+            } else {
+                cartItem.setQuantity(newQuantity);
+                cartItemRepository.save(cartItem);
+            }
         } else {
-            cartItem = new CartItem();
-            cartItem.setCart(cart);
-            cartItem.setProduct(product);
-            cartItem.setQuantity(quantity);
-            cart.getCartItems().add(cartItem);
+            if (quantity > 0) {
+                cartItem = new CartItem();
+                cartItem.setCart(cart);
+                cartItem.setProduct(product);
+                cartItem.setQuantity(quantity);
+                cart.getCartItems().add(cartItem);
+                cartItemRepository.save(cartItem);
+            }
         }
 
-        cartItemRepository.save(cartItem);
         return cart;
     }
 
