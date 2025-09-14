@@ -37,13 +37,17 @@ public class OrderController {
     @GetMapping("/me")
     public ResponseEntity<List<Order>> getMyOrders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal() instanceof String) {
+        if (authentication == null || !authentication.isAuthenticated() || 
+            authentication.getName().equals("anonymousUser")) {
             return ResponseEntity.status(401).build();
         }
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        // Assuming your UserDetails is the User model itself
-        com.example.ecommerce.model.User currentUser = (com.example.ecommerce.model.User) userDetails;
-        List<Order> orders = orderService.findOrdersByUserId(currentUser.getId());
-        return ResponseEntity.ok(orders);
+        
+        try {
+            Long userId = Long.parseLong(authentication.getName());
+            List<Order> orders = orderService.findOrdersByUserId(userId);
+            return ResponseEntity.ok(orders);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(401).build();
+        }
     }
 }

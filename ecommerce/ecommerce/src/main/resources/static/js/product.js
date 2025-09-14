@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const ordersLinkLi = document.getElementById('orders-link-li');
     const logoutLinkLi = document.getElementById('logout-link-li');
     const logoutBtn = document.getElementById('logout-btn');
+    const cartLink = document.getElementById('cart-link');
     
     let allProducts = [];
+    let wishlistItems = new Set();
 
     function showToast(message, type = 'success') {
         const toastContainer = document.getElementById('toast-container');
@@ -50,6 +52,71 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error fetching cart:', error);
             cartCounter.textContent = '0';
+        }
+    }
+
+    // Wishlist functions
+    async function toggleWishlist(productId) {
+        try {
+            const response = await fetch(`/api/wishlist/toggle/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.isInWishlist) {
+                    wishlistItems.add(productId);
+                    showToast('Added to wishlist!', 'success');
+                } else {
+                    wishlistItems.delete(productId);
+                    showToast('Removed from wishlist', 'info');
+                }
+                updateWishlistButton();
+            } else if (response.status === 401) {
+                showToast('Please log in to use wishlist', 'warning');
+            } else {
+                showToast('Error updating wishlist', 'danger');
+            }
+        } catch (error) {
+            console.error('Error toggling wishlist:', error);
+            showToast('Error updating wishlist', 'danger');
+        }
+    }
+
+    async function loadWishlistStatus() {
+        try {
+            const response = await fetch('/api/wishlist');
+            if (response.ok) {
+                const wishlistData = await response.json();
+                wishlistItems.clear();
+                wishlistData.forEach(item => {
+                    wishlistItems.add(item.product.id);
+                });
+                updateWishlistButton();
+            }
+        } catch (error) {
+            console.error('Error loading wishlist status:', error);
+        }
+    }
+
+    function updateWishlistButton() {
+        const wishlistBtn = document.getElementById('wishlist-btn');
+        if (!wishlistBtn) return;
+        
+        const productId = parseInt(new URLSearchParams(window.location.search).get('id'));
+        const icon = wishlistBtn.querySelector('i');
+        
+        if (wishlistItems.has(productId)) {
+            wishlistBtn.classList.add('active');
+            icon.className = 'bi bi-heart-fill';
+            wishlistBtn.title = 'Remove from wishlist';
+        } else {
+            wishlistBtn.classList.remove('active');
+            icon.className = 'bi bi-heart';
+            wishlistBtn.title = 'Add to wishlist';
         }
     }
 
@@ -141,6 +208,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    cartLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showToast('Please visit the home page to view your cart and checkout.', 'info');
+        setTimeout(() => window.location.href = '/', 2000);
+    });
+
     const fetchProductDetails = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
@@ -190,9 +263,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 ${isLimitedStock ? `<p class="limited-stock"><i class="bi bi-exclamation-circle me-1"></i>Only ${product.stockQuantity} left!</p>` : ''}
                 ${isOutOfStock ? `<p class="out-of-stock fw-bold"><i class="bi bi-x-circle me-1"></i>Out of Stock</p>` : ''}
-                <div class="d-grid mt-4">
+                <div class="d-grid gap-2 mt-4">
                     <button id="addToCartBtn" class="btn btn-primary btn-lg fw-semibold add-to-cart-button-details" ${isOutOfStock ? 'disabled' : ''}>
                         <i class="bi bi-cart-plus me-2"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
+                    <button id="wishlist-btn" class="btn btn-outline-danger btn-lg fw-semibold" title="Add to wishlist">
+                        <i class="bi bi-heart me-2"></i> Add to Wishlist
                     </button>
                 </div>
             </div>
@@ -204,9 +280,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 await addToCart(product, 1);
             }
         });
+
+        document.getElementById('wishlist-btn').addEventListener('click', async () => {
+            const productId = parseInt(new URLSearchParams(window.location.search).get('id'));
+            await toggleWishlist(productId);
+        });
     };
 
     // Initial calls
     checkAuthAndGetUserId();
     fetchProductDetails();
+    loadWishlistStatus();
 });

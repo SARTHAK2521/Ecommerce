@@ -94,3 +94,7 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
     @Query("SELECT r FROM ProductReview r WHERE r.user.id = :userId ORDER BY r.createdAt DESC")
     List<ProductReview> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 }
+
+
+
+

@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ordersLinkLi = document.getElementById('orders-link-li');
     const logoutLinkLi = document.getElementById('logout-link-li');
     const logoutBtn = document.getElementById('logout-btn');
+    const cartLink = document.getElementById('cart-link');
     
     // New dark mode elements
     const darkModeToggle = document.getElementById('dark-mode-toggle');
@@ -493,6 +494,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (cart.length === 0) {
                 showToast('Your cart is empty. Please add items before checking out.', 'warning');
+                return;
+            }
+
+            await fetchShippingOptions();
+            renderCheckoutModal();
+            checkoutModal.show();
+        });
+
+        cartLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const userId = sessionStorage.getItem('userId');
+            if (!userId) {
+                showToast('You must be logged in to view your cart.', 'danger');
+                setTimeout(() => window.location.href = '/login.html', 2000);
+                return;
+            }
+            if (cart.length === 0) {
+                showToast('Your cart is empty. Add some items to get started!', 'info');
                 return;
             }
 

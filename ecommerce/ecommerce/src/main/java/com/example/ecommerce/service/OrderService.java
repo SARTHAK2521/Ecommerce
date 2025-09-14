@@ -53,6 +53,7 @@ public class OrderService {
             subtotalAmount += cartItem.getProduct().getPrice() * cartItem.getQuantity();
         }
 
+        order.setSubtotal(subtotalAmount);
         order.setTotalAmount(subtotalAmount + shippingOption.getCost());
         return orderRepository.save(order);
     }

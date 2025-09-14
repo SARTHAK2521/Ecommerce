@@ -65,3 +65,4 @@ public class Wishlist {
         this.addedAt = addedAt;
     }
 }
+

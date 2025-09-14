@@ -1,264 +1,288 @@
-// Wishlist functionality
-class WishlistManager {
-    constructor() {
-        this.wishlistItems = [];
-        this.init();
+document.addEventListener('DOMContentLoaded', () => {
+    const wishlistGrid = document.getElementById('wishlist-grid');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const emptyWishlist = document.getElementById('empty-wishlist');
+    const wishlistCount = document.getElementById('wishlist-count');
+    const cartCounter = document.getElementById('cart-counter');
+    const authLink = document.getElementById('auth-link');
+    const ordersLinkLi = document.getElementById('orders-link-li');
+    const logoutLinkLi = document.getElementById('logout-link-li');
+    const logoutBtn = document.getElementById('logout-btn');
+    const cartLink = document.getElementById('cart-link');
+    
+    let wishlistItems = [];
+
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        const toastElement = document.createElement('div');
+        toastElement.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastElement.setAttribute('role', 'alert');
+        toastElement.setAttribute('aria-live', 'assertive');
+        toastElement.setAttribute('aria-atomic', 'true');
+        toastElement.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        toastContainer.appendChild(toastElement);
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
     }
 
-    init() {
-        this.loadWishlist();
-        this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-        // Dark mode toggle
-        const darkModeToggle = document.getElementById('dark-mode-toggle');
-        if (darkModeToggle) {
-            darkModeToggle.addEventListener('click', this.toggleDarkMode.bind(this));
+    async function updateCartCounter() {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            cartCounter.textContent = '0';
+            return;
         }
 
-        // Load dark mode preference
-        this.loadDarkModePreference();
+        try {
+            const response = await fetch(`/api/cart/${userId}`);
+            if (response.ok) {
+                const cartData = await response.json();
+                const totalItems = cartData.cartItems.reduce((total, item) => total + item.quantity, 0);
+                cartCounter.textContent = totalItems;
+            } else {
+                cartCounter.textContent = '0';
+            }
+        } catch (error) {
+            console.error('Error fetching cart:', error);
+            cartCounter.textContent = '0';
+        }
     }
 
-    async loadWishlist() {
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const emptyWishlist = document.getElementById('empty-wishlist');
-        const wishlistGrid = document.getElementById('wishlist-grid');
-        const wishlistCount = document.getElementById('wishlist-count');
-
+    async function checkAuthenticationAndSetUserId() {
         try {
-            loadingSpinner.style.display = 'block';
-            emptyWishlist.style.display = 'none';
-            wishlistGrid.innerHTML = '';
-
-            const response = await fetch('/api/wishlist');
-            
-            if (response.status === 401) {
-                // User not authenticated, redirect to login
-                window.location.href = '/login.html';
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error('Failed to load wishlist');
-            }
-
-            this.wishlistItems = await response.json();
-            
-            if (this.wishlistItems.length === 0) {
-                emptyWishlist.style.display = 'block';
-                wishlistGrid.style.display = 'none';
+            const response = await fetch('/api/users/me');
+            if (response.ok) {
+                const user = await response.json();
+                sessionStorage.setItem('userId', user.id);
+                sessionStorage.setItem('username', user.username);
+                sessionStorage.setItem('userRole', user.role);
+                authLink.classList.add('d-none');
+                ordersLinkLi.classList.remove('d-none');
+                logoutLinkLi.classList.remove('d-none');
             } else {
-                emptyWishlist.style.display = 'none';
-                wishlistGrid.style.display = 'grid';
-                this.renderWishlistItems();
+                sessionStorage.removeItem('userId');
+                sessionStorage.removeItem('username');
+                sessionStorage.removeItem('userRole');
+                authLink.classList.remove('d-none');
+                ordersLinkLi.classList.add('d-none');
+                logoutLinkLi.classList.add('d-none');
             }
-
-            wishlistCount.textContent = `${this.wishlistItems.length} item${this.wishlistItems.length !== 1 ? 's' : ''}`;
-
         } catch (error) {
-            console.error('Error loading wishlist:', error);
-            this.showToast('Error loading wishlist', 'error');
+            console.error('Error checking auth:', error);
+            sessionStorage.removeItem('userId');
+            sessionStorage.removeItem('username');
+            sessionStorage.removeItem('userRole');
+            authLink.classList.remove('d-none');
+            ordersLinkLi.classList.add('d-none');
+            logoutLinkLi.classList.add('d-none');
+        } finally {
+            await updateCartCounter();
+        }
+    }
+    
+    function checkAuthAndGetUserId() {
+        const userId = sessionStorage.getItem('userId');
+        if (userId) {
+            authLink.classList.add('d-none');
+            ordersLinkLi.classList.remove('d-none');
+            logoutLinkLi.classList.remove('d-none');
+        } else {
+            checkAuthenticationAndSetUserId();
+        }
+    }
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+             const response = await fetch('/logout', { method: 'POST' });
+             if (response.ok) {
+                 sessionStorage.removeItem('userId');
+                 sessionStorage.removeItem('username');
+                 sessionStorage.removeItem('userRole');
+                 window.location.href = '/login.html';
+             }
+        } catch (error) {
+            console.error('Logout failed:', error);
+            window.location.href = '/login.html';
+        }
+    });
+
+    cartLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showToast('Please visit the home page to view your cart and checkout.', 'info');
+        setTimeout(() => window.location.href = '/', 2000);
+    });
+
+    async function fetchWishlist() {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            showEmptyWishlist();
+            return;
+        }
+
+        loadingSpinner.style.display = 'block';
+        try {
+            const response = await fetch('/api/wishlist');
+            if (response.ok) {
+                wishlistItems = await response.json();
+                renderWishlist();
+            } else if (response.status === 401) {
+                showToast('Please log in to view your wishlist', 'warning');
+                setTimeout(() => window.location.href = '/login.html', 2000);
+            } else {
+                showToast('Failed to load wishlist', 'danger');
+                showEmptyWishlist();
+            }
+        } catch (error) {
+            console.error('Error fetching wishlist:', error);
+            showToast('Failed to load wishlist', 'danger');
+            showEmptyWishlist();
         } finally {
             loadingSpinner.style.display = 'none';
         }
     }
 
-    renderWishlistItems() {
-        const wishlistGrid = document.getElementById('wishlist-grid');
+    function renderWishlist() {
+        if (wishlistItems.length === 0) {
+            showEmptyWishlist();
+            return;
+        }
+
         wishlistGrid.innerHTML = '';
-
-        this.wishlistItems.forEach(item => {
+        wishlistCount.textContent = `${wishlistItems.length} item${wishlistItems.length !== 1 ? 's' : ''}`;
+        
+        wishlistItems.forEach(item => {
             const product = item.product;
-            const productCard = this.createProductCard(product, item.id);
-            wishlistGrid.appendChild(productCard);
-        });
-    }
+            const isOutOfStock = product.stockQuantity <= 0;
+            const isLimitedStock = product.stockQuantity > 0 && product.stockQuantity <= 10;
+            const discountPercent = product.onSale ? ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0) : 0;
 
-    createProductCard(product, wishlistId) {
-        const col = document.createElement('div');
-        col.className = 'col';
-
-        const discountBadge = product.onSale && product.originalPrice > product.price 
-            ? `<div class="discount-badge">${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF</div>`
-            : '';
-
-        const priceDisplay = product.onSale && product.originalPrice > product.price
-            ? `<div class="price-flex">
-                <span class="price">$${product.price.toFixed(2)}</span>
-                <span class="original-price">$${product.originalPrice.toFixed(2)}</span>
-               </div>`
-            : `<div class="price">$${product.price.toFixed(2)}</div>`;
-
-        col.innerHTML = `
-            <div class="product-card h-100">
-                <div class="product-img-container position-relative">
-                    ${discountBadge}
-                    <img src="${product.imageUrl}" alt="${product.name}" class="img-fluid">
-                </div>
-                <div class="product-card-body">
-                    <div class="category">${product.category}</div>
-                    <h5 class="product-title">${product.name}</h5>
-                    <p class="text-muted small">${product.description}</p>
-                    ${priceDisplay}
-                    <div class="btn-group mt-3">
-                        <button class="btn btn-primary btn-add-to-cart" data-product-id="${product.id}">
-                            <i class="bi bi-cart-plus me-1"></i>Add to Cart
-                        </button>
-                        <button class="btn btn-outline-danger btn-remove-wishlist" data-wishlist-id="${wishlistId}" data-product-id="${product.id}">
-                            <i class="bi bi-heart-fill"></i>
-                        </button>
+            const productCard = document.createElement('div');
+            productCard.className = 'col';
+            productCard.innerHTML = `
+                <div class="card h-100 product-card shadow border-0 position-relative">
+                    ${product.onSale ? `<span class="discount-badge">-${discountPercent}%</span>` : ''}
+                    <div class="product-img-container bg-white p-3 d-flex align-items-center justify-content-center" style="min-height:180px;">
+                        <a href="/product.html?id=${product.id}" tabindex="0">
+                            <img src="${product.imageUrl}" class="card-img-top" alt="${product.name}" aria-label="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=No+Image';" style="max-height:140px;object-fit:contain;">
+                        </a>
+                    </div>
+                    <div class="card-body product-card-body d-flex flex-column">
+                        <p class="category mb-1 text-uppercase text-primary small fw-semibold">${product.category || 'Uncategorized'}</p>
+                        <h5 class="card-title product-title mb-2">
+                            <a href="/product.html?id=${product.id}" class="text-dark text-decoration-none" aria-label="View details for ${product.name}">${product.name}</a>
+                        </h5>
+                        <div class="price-flex">
+                            <p class="card-text price mb-0 fw-bold fs-5 text-success">$${product.price.toFixed(2)}</p>
+                            ${product.onSale ? `<p class="card-text original-price mb-0">$${product.originalPrice.toFixed(2)}</p>` : ''}
+                        </div>
+                        ${isLimitedStock ? `<span class="limited-stock"><i class="bi bi-exclamation-circle me-1"></i>Only ${product.stockQuantity} left!</span>` : ''}
+                        ${isOutOfStock ? `<span class="out-of-stock fw-bold"><i class="bi bi-x-circle me-1"></i>Out of Stock</span>` : ''}
+                        <div class="mt-auto">
+                            <button class="btn btn-primary btn-sm w-100 mb-2 add-to-cart-btn" data-product-id="${product.id}" ${isOutOfStock ? 'disabled' : ''}>
+                                <i class="bi bi-cart-plus me-1"></i>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm w-100 remove-from-wishlist-btn" data-product-id="${product.id}">
+                                <i class="bi bi-heart-fill me-1"></i>Remove from Wishlist
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-
-        // Add event listeners
-        const addToCartBtn = col.querySelector('.btn-add-to-cart');
-        const removeWishlistBtn = col.querySelector('.btn-remove-wishlist');
-
-        addToCartBtn.addEventListener('click', (e) => {
-            this.addToCart(product.id);
+            `;
+            wishlistGrid.appendChild(productCard);
         });
 
-        removeWishlistBtn.addEventListener('click', (e) => {
-            this.removeFromWishlist(wishlistId, product.id);
-        });
-
-        return col;
+        // Add event listeners for the new buttons
+        setupWishlistEventListeners();
     }
 
-    async addToCart(productId) {
-        try {
-            const response = await fetch(`/api/cart/add/${productId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+    function showEmptyWishlist() {
+        wishlistGrid.innerHTML = '';
+        emptyWishlist.style.display = 'block';
+        wishlistCount.textContent = '0 items';
+    }
+
+    function setupWishlistEventListeners() {
+        // Add to cart functionality
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const productId = parseInt(e.target.closest('.add-to-cart-btn').dataset.productId);
+                const product = wishlistItems.find(item => item.product.id === productId)?.product;
+                
+                if (product) {
+                    await addToCart(product, 1);
                 }
+            });
+        });
+
+        // Remove from wishlist functionality
+        document.querySelectorAll('.remove-from-wishlist-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const productId = parseInt(e.target.closest('.remove-from-wishlist-btn').dataset.productId);
+                await removeFromWishlist(productId);
+            });
+        });
+    }
+
+    async function addToCart(product, quantity = 1) {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            showToast('You must be logged in to add products to cart.', 'danger');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/cart/${userId}/items`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: product.id, quantity: quantity })
             });
 
             if (response.ok) {
-                this.showToast('Product added to cart!', 'success');
-                this.updateCartCounter();
-            } else if (response.status === 401) {
-                this.showToast('Please log in to add items to cart', 'warning');
+                await updateCartCounter();
+                showToast(`${quantity} x ${product.name} added to cart!`);
             } else {
-                this.showToast('Error adding product to cart', 'error');
+                const error = await response.json();
+                showToast(error.message || 'Failed to add item to cart.', 'danger');
             }
         } catch (error) {
-            console.error('Error adding to cart:', error);
-            this.showToast('Error adding product to cart', 'error');
+            console.error('Add to cart error:', error);
+            showToast('An error occurred while adding to cart.', 'danger');
         }
     }
 
-    async removeFromWishlist(wishlistId, productId) {
+    async function removeFromWishlist(productId) {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            showToast('You must be logged in to manage your wishlist.', 'danger');
+            return;
+        }
+
         try {
             const response = await fetch(`/api/wishlist/remove/${productId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
             });
 
             if (response.ok) {
-                this.showToast('Product removed from wishlist', 'success');
-                // Remove the item from the UI
-                this.wishlistItems = this.wishlistItems.filter(item => item.id !== wishlistId);
-                this.renderWishlistItems();
-                this.updateWishlistCount();
-                
-                // Show empty state if no items left
-                if (this.wishlistItems.length === 0) {
-                    document.getElementById('empty-wishlist').style.display = 'block';
-                    document.getElementById('wishlist-grid').style.display = 'none';
-                }
-            } else {
-                this.showToast('Error removing product from wishlist', 'error');
-            }
-        } catch (error) {
-            console.error('Error removing from wishlist:', error);
-            this.showToast('Error removing product from wishlist', 'error');
-        }
-    }
-
-    async updateCartCounter() {
-        try {
-            const response = await fetch('/api/cart/count');
-            if (response.ok) {
                 const data = await response.json();
-                const cartCounter = document.getElementById('cart-counter');
-                if (cartCounter) {
-                    cartCounter.textContent = data.count;
-                }
+                showToast(data.message || 'Product removed from wishlist', 'info');
+                // Refresh the wishlist
+                await fetchWishlist();
+            } else {
+                const error = await response.json();
+                showToast(error.message || 'Failed to remove item from wishlist.', 'danger');
             }
         } catch (error) {
-            console.error('Error updating cart counter:', error);
+            console.error('Remove from wishlist error:', error);
+            showToast('An error occurred while removing from wishlist.', 'danger');
         }
     }
 
-    updateWishlistCount() {
-        const wishlistCount = document.getElementById('wishlist-count');
-        if (wishlistCount) {
-            wishlistCount.textContent = `${this.wishlistItems.length} item${this.wishlistItems.length !== 1 ? 's' : ''}`;
-        }
-    }
-
-    showToast(message, type = 'info') {
-        const toastContainer = document.getElementById('toast-container');
-        const toastId = 'toast-' + Date.now();
-        
-        const toastClass = type === 'success' ? 'bg-success' : 
-                          type === 'error' ? 'bg-danger' : 
-                          type === 'warning' ? 'bg-warning' : 'bg-info';
-        
-        const textColor = type === 'warning' ? 'text-dark' : 'text-white';
-        
-        const toastHTML = `
-            <div id="${toastId}" class="toast ${toastClass} ${textColor}" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-body d-flex align-items-center">
-                    <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-                    ${message}
-                </div>
-            </div>
-        `;
-        
-        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-        
-        const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
-        toast.show();
-        
-        toastElement.addEventListener('hidden.bs.toast', () => {
-            toastElement.remove();
-        });
-    }
-
-    toggleDarkMode() {
-        const body = document.body;
-        const darkModeIcon = document.getElementById('dark-mode-icon');
-        
-        body.classList.toggle('dark-mode');
-        
-        if (body.classList.contains('dark-mode')) {
-            darkModeIcon.className = 'bi bi-sun-fill';
-            localStorage.setItem('darkMode', 'enabled');
-        } else {
-            darkModeIcon.className = 'bi bi-moon-fill';
-            localStorage.setItem('darkMode', 'disabled');
-        }
-    }
-
-    loadDarkModePreference() {
-        const darkMode = localStorage.getItem('darkMode');
-        const body = document.body;
-        const darkModeIcon = document.getElementById('dark-mode-icon');
-        
-        if (darkMode === 'enabled') {
-            body.classList.add('dark-mode');
-            darkModeIcon.className = 'bi bi-sun-fill';
-        }
-    }
-}
-
-// Initialize wishlist manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new WishlistManager();
+    // Initialize the page
+    checkAuthAndGetUserId();
+    fetchWishlist();
 });
