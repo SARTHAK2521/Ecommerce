@@ -11,6 +11,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
@@ -33,13 +35,18 @@ public class SecurityConfig {
     }
 
     @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/", "/index.html", "/login.html", "/product.html", "/wishlist.html", "/my_orders.html").permitAll()
-                .requestMatchers("/api/products/**", "/api/users/register").permitAll()
+                .requestMatchers("/api/products/**", "/api/users/register", "/api/users/login").permitAll()
                 .requestMatchers("/api/cart/**", "/api/orders/**", "/api/shipping/**", "/api/wishlist/**", "/api/reviews/**").authenticated()
                 .requestMatchers("/admin.html").hasRole("ADMIN")
                 .anyRequest().authenticated()
@@ -57,6 +64,10 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID")
                 .invalidateHttpSession(true)
                 .permitAll()
+            )
+            .sessionManagement(session -> session
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
             );
         return http.build();
     }

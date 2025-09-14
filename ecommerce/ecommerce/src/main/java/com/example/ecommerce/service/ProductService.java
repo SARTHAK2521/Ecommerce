@@ -64,7 +64,23 @@ public class ProductService {
         existingProduct.setPrice(productDetails.getPrice());
         existingProduct.setImageUrl(productDetails.getImageUrl());
         existingProduct.setCategory(productDetails.getCategory());
+        existingProduct.setStockQuantity(productDetails.getStockQuantity());
 
+        return productRepository.save(existingProduct);
+    }
+
+    /**
+     * UPDATE: Updates a product's stock quantity.
+     * @param id The ID of the product to update.
+     * @param stockQuantity The new stock quantity.
+     * @return the updated product.
+     * @throws RuntimeException if no product is found with the given ID.
+     */
+    public Product updateProductStock(Long id, int stockQuantity) {
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+
+        existingProduct.setStockQuantity(stockQuantity);
         return productRepository.save(existingProduct);
     }
 

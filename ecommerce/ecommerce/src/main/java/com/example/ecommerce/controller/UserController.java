@@ -9,8 +9,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +45,9 @@ public class UserController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+    
+    @Autowired
+    private SecurityContextRepository securityContextRepository;
 
     /**
      * READ: Endpoint to get a list of all users.
@@ -142,23 +148,28 @@ public class UserController {
      * @return A ResponseEntity with the authenticated user's data or an unauthorized error.
      */
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest, 
+                                    HttpServletRequest request, 
+                                    HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.username, loginRequest.password)
             );
+            
+            // Create security context and save to session
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            securityContextRepository.saveContext(SecurityContextHolder.getContext(), request, response);
 
             Optional<User> optionalUser = userService.findByUsername(loginRequest.username);
             if (optionalUser.isPresent()) {
                 User authenticatedUser = optionalUser.get();
-                LoginResponse response = new LoginResponse();
-                response.id = authenticatedUser.getId();
-                response.username = authenticatedUser.getUsername();
-                response.email = authenticatedUser.getEmail();
-                response.role = authenticatedUser.getRole();
+                LoginResponse loginResponse = new LoginResponse();
+                loginResponse.id = authenticatedUser.getId();
+                loginResponse.username = authenticatedUser.getUsername();
+                loginResponse.email = authenticatedUser.getEmail();
+                loginResponse.role = authenticatedUser.getRole();
 
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(loginResponse);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
             }

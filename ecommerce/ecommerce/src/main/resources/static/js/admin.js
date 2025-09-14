@@ -25,8 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const productTableBody = document.getElementById('product-table-body');
     const addProductBtn = document.getElementById('addProductBtn');
     const productModal = new bootstrap.Modal(document.getElementById('productModal'));
+    const stockModal = new bootstrap.Modal(document.getElementById('stockModal'));
     const modalTitle = document.getElementById('modalTitle');
     const productForm = document.getElementById('productForm');
+    const stockForm = document.getElementById('stockForm');
 
     let currentProducts = [];
     let isEditing = false;
@@ -46,6 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
         productTableBody.innerHTML = '';
         products.forEach(product => {
             const row = document.createElement('tr');
+            const stockBadgeClass = product.stockQuantity > 10 ? 'bg-success' : 
+                                   product.stockQuantity > 0 ? 'bg-warning' : 'bg-danger';
             row.innerHTML = `
                 <td>${product.id}</td>
                 <td><img src="${product.imageUrl}" alt="${product.name}" style="width: 60px; height: 60px; object-fit: cover;"></td>
@@ -53,7 +57,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${product.category}</td>
                 <td>$${product.price.toFixed(2)}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm edit-btn" data-id="${product.id}"><i class="bi bi-pencil"></i> Edit</button>
+                    <span class="badge ${stockBadgeClass} text-white">${product.stockQuantity}</span>
+                </td>
+                <td>
+                    <button class="btn btn-info btn-sm stock-btn me-1" data-id="${product.id}"><i class="bi bi-box"></i> Stock</button>
+                    <button class="btn btn-warning btn-sm edit-btn me-1" data-id="${product.id}"><i class="bi bi-pencil"></i> Edit</button>
                     <button class="btn btn-danger btn-sm delete-btn" data-id="${product.id}"><i class="bi bi-trash"></i> Delete</button>
                 </td>
             `;
@@ -71,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('productCategory').value = product.category;
             document.getElementById('productPrice').value = product.price;
             document.getElementById('productImageUrl').value = product.imageUrl;
+            document.getElementById('productStock').value = product.stockQuantity;
         } else {
             isEditing = false;
             currentProductId = null;
@@ -88,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
             description: document.getElementById('productDescription').value,
             category: document.getElementById('productCategory').value,
             price: parseFloat(document.getElementById('productPrice').value),
-            imageUrl: document.getElementById('productImageUrl').value
+            imageUrl: document.getElementById('productImageUrl').value,
+            stockQuantity: parseInt(document.getElementById('productStock').value)
         };
 
         const method = isEditing ? 'PUT' : 'POST';
@@ -112,10 +122,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const showStockModal = (product) => {
+        document.getElementById('stockProductId').value = product.id;
+        document.getElementById('productNameDisplay').value = product.name;
+        document.getElementById('currentStock').value = product.stockQuantity;
+        document.getElementById('newStock').value = product.stockQuantity;
+        stockModal.show();
+    };
+
+    stockForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const productId = document.getElementById('stockProductId').value;
+        const newStock = parseInt(document.getElementById('newStock').value);
+
+        try {
+            const response = await fetch(`/api/products/${productId}/stock`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stockQuantity: newStock })
+            });
+
+            if (response.ok) {
+                stockModal.hide();
+                fetchProducts();
+            } else {
+                console.error('Failed to update stock:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error updating stock:', error);
+        }
+    });
+
     productTableBody.addEventListener('click', async (e) => {
         const id = e.target.closest('button').dataset.id;
 
-        if (e.target.closest('.edit-btn')) {
+        if (e.target.closest('.stock-btn')) {
+            const productToUpdate = currentProducts.find(p => p.id == id);
+            if (productToUpdate) {
+                showStockModal(productToUpdate);
+            }
+        } else if (e.target.closest('.edit-btn')) {
             const productToEdit = currentProducts.find(p => p.id == id);
             if (productToEdit) {
                 showModal(productToEdit);

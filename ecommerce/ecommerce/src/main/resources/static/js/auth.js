@@ -22,6 +22,39 @@ document.addEventListener('DOMContentLoaded', () => {
         loginFormContainer.style.display = 'block';
     });
 
+    // --- LOGIN FORM SUBMISSION ---
+    const loginForm = document.getElementById('loginForm');
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+
+        try {
+            const response = await fetch('/api/users/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                // Store user data in sessionStorage
+                sessionStorage.setItem('userId', userData.id);
+                sessionStorage.setItem('username', userData.username);
+                sessionStorage.setItem('userRole', userData.role);
+                
+                // Redirect to home page
+                window.location.href = '/index.html';
+            } else {
+                errorAlert.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            errorAlert.style.display = 'block';
+        }
+    });
+
     // --- REGISTRATION FORM SUBMISSION ---
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();

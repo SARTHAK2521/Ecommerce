@@ -74,6 +74,22 @@ public class ProductController {
     }
 
     /**
+     * UPDATE: Handles PATCH requests to /api/products/{id}/stock to update product stock quantity.
+     * @param id The ID of the product to update.
+     * @param stockRequest The stock update request containing the new stock quantity.
+     * @return A ResponseEntity containing the updated product if successful (200 OK), or 404 Not Found.
+     */
+    @PatchMapping("/{id}/stock")
+    public ResponseEntity<Product> updateProductStock(@PathVariable Long id, @RequestBody StockUpdateRequest stockRequest) {
+        try {
+            Product updatedProduct = productService.updateProductStock(id, stockRequest.getStockQuantity());
+            return ResponseEntity.ok(updatedProduct);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
      * DELETE: Handles DELETE requests to /api/products/{id} to remove a product.
      * @param id The ID of the product to delete.
      * @return A ResponseEntity with 204 No Content if successful, or 404 Not Found.
@@ -85,6 +101,21 @@ public class ProductController {
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Inner class for stock update requests
+     */
+    public static class StockUpdateRequest {
+        private int stockQuantity;
+
+        public int getStockQuantity() {
+            return stockQuantity;
+        }
+
+        public void setStockQuantity(int stockQuantity) {
+            this.stockQuantity = stockQuantity;
         }
     }
 }
