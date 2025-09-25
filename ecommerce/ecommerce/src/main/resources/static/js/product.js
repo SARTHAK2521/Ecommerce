@@ -1,9 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     const productDetailContainer = document.getElementById('product-detail-container');
     const loadingSpinner = document.getElementById('loading-spinner');
-    const errorMessage = document.getElementById('error-message');
+    const errorMessage = document.getElementById('product-not-found');
     const productTitlePage = document.getElementById('product-title-page');
     const cartCounter = document.getElementById('cart-counter');
+    const reviewSummary = document.getElementById('review-summary');
+    const reviewsList = document.getElementById('reviews-list');
+    const noReviewsMessage = document.getElementById('no-reviews');
     
     // Auth link logic
     const authLink = document.getElementById('auth-link');
@@ -219,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const productId = urlParams.get('id');
 
         if (!productId) {
-            errorMessage.classList.remove('d-none');
+            errorMessage.style.display = 'block';
             return;
         }
 
@@ -227,64 +230,102 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/products/${productId}`);
             if (!response.ok) {
-                errorMessage.classList.remove('d-none');
+                errorMessage.style.display = 'block';
                 throw new Error('Product not found');
             }
             const product = await response.json();
-            allProducts = [product]; // Keep a local reference for addToCart
+            allProducts = [product];
             renderProductDetails(product);
+            await fetchAndRenderReviews(productId); 
         } catch (error) {
             console.error('Error fetching product details:', error);
-            errorMessage.classList.remove('d-none');
+            errorMessage.style.display = 'block';
         } finally {
             loadingSpinner.style.display = 'none';
         }
     };
 
     const renderProductDetails = (product) => {
-        productTitlePage.textContent = product.name;
-        productDetailContainer.classList.remove('d-none');
-        
-        const discountPercent = product.onSale ? ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0) : 0;
+        document.getElementById('product-details').style.display = 'block';
+        document.getElementById('product-category').textContent = product.category;
+        document.getElementById('product-name').textContent = product.name;
+        document.getElementById('product-description').textContent = product.description;
+        document.getElementById('product-price').textContent = `$${product.price.toFixed(2)}`;
+        document.getElementById('product-original-price').textContent = product.onSale ? `$${product.originalPrice.toFixed(2)}` : '';
+        document.querySelector('.product-image-container img').src = product.imageUrl;
+
         const isOutOfStock = product.stockQuantity <= 0;
         const isLimitedStock = product.stockQuantity > 0 && product.stockQuantity <= 10;
         
-        productDetailContainer.innerHTML = `
-            <div class="col-md-6 text-center product-image-container">
-                <img src="${product.imageUrl}" class="img-fluid" onerror="this.onerror=null;this.src='https://placehold.co/600x400?text=No+Image';">
-            </div>
-            <div class="col-md-6 product-details">
-                <h6 class="text-uppercase text-primary fw-semibold">${product.category}</h6>
-                <h1 class="display-5 fw-bold">${product.name}</h1>
-                <p class="lead text-muted">${product.description}</p>
-                <div class="d-flex align-items-center mb-4">
-                    <h2 class="price">$${product.price.toFixed(2)}</h2>
-                    ${product.onSale ? `<p class="original-price ms-3 mb-0">$${product.originalPrice.toFixed(2)}</p>` : ''}
-                </div>
-                ${isLimitedStock ? `<p class="limited-stock"><i class="bi bi-exclamation-circle me-1"></i>Only ${product.stockQuantity} left!</p>` : ''}
-                ${isOutOfStock ? `<p class="out-of-stock fw-bold"><i class="bi bi-x-circle me-1"></i>Out of Stock</p>` : ''}
-                <div class="d-grid gap-2 mt-4">
-                    <button id="addToCartBtn" class="btn btn-primary btn-lg fw-semibold add-to-cart-button-details" ${isOutOfStock ? 'disabled' : ''}>
-                        <i class="bi bi-cart-plus me-2"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-                    </button>
-                    <button id="wishlist-btn" class="btn btn-outline-danger btn-lg fw-semibold" title="Add to wishlist">
-                        <i class="bi bi-heart me-2"></i> Add to Wishlist
-                    </button>
-                </div>
-            </div>
-        `;
+        document.getElementById('product-limited-stock').textContent = isLimitedStock ? `Only ${product.stockQuantity} left!` : '';
+        document.getElementById('product-out-of-stock').textContent = isOutOfStock ? `Out of Stock` : '';
+        document.getElementById('addToCartBtn').disabled = isOutOfStock;
+        document.getElementById('addToCartBtn').innerHTML = `<i class="bi bi-cart-plus me-2"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}`;
 
         document.getElementById('addToCartBtn').addEventListener('click', async () => {
-            const product = allProducts.find(p => p.id === parseInt(new URLSearchParams(window.location.search).get('id')));
-            if(product) {
-                await addToCart(product, 1);
-            }
+            await addToCart(product, 1);
         });
 
         document.getElementById('wishlist-btn').addEventListener('click', async () => {
             const productId = parseInt(new URLSearchParams(window.location.search).get('id'));
             await toggleWishlist(productId);
         });
+    };
+    
+    // Review functions
+    const fetchAndRenderReviews = async (productId) => {
+        try {
+            const statsResponse = await fetch(`/api/reviews/product/${productId}/stats`);
+            if (statsResponse.ok) {
+                const stats = await statsResponse.json();
+                document.getElementById('average-rating').textContent = stats.averageRating || '0.0';
+                document.getElementById('review-count').textContent = `${stats.reviewCount} reviews`;
+                const starHtml = getStarRating(stats.averageRating);
+                document.getElementById('review-stars').innerHTML = starHtml;
+            }
+
+            const reviewsResponse = await fetch(`/api/reviews/product/${productId}`);
+            if (!reviewsResponse.ok) throw new Error('Failed to fetch reviews.');
+            
+            const reviews = await reviewsResponse.json();
+            reviewsList.innerHTML = '';
+            if (reviews.length === 0) {
+                noReviewsMessage.classList.remove('d-none');
+                reviewsList.classList.add('d-none');
+            } else {
+                noReviewsMessage.classList.add('d-none');
+                reviewsList.classList.remove('d-none');
+                reviews.forEach(review => {
+                    const reviewCard = document.createElement('div');
+                    reviewCard.className = 'card mb-3';
+                    reviewCard.innerHTML = `
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold">${review.user.username}</h6>
+                            <small class="text-muted d-block mb-2">${new Date(review.createdAt).toLocaleDateString()}</small>
+                            <div class="mb-2">${getStarRating(review.rating)}</div>
+                            <p class="card-text">${review.comment}</p>
+                        </div>
+                    `;
+                    reviewsList.appendChild(reviewCard);
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching reviews:', error);
+            reviewsList.innerHTML = '<p class="text-danger">Failed to load reviews.</p>';
+        }
+    };
+
+    const getStarRating = (rating) => {
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 >= 0.5 ? 1 : 0;
+        const emptyStars = 5 - fullStars - halfStar;
+        
+        let starHtml = '';
+        for (let i = 0; i < fullStars; i++) starHtml += '<i class="bi bi-star-fill text-warning me-1"></i>';
+        if (halfStar) starHtml += '<i class="bi bi-star-half text-warning me-1"></i>';
+        for (let i = 0; i < emptyStars; i++) starHtml += '<i class="bi bi-star text-warning me-1"></i>';
+        
+        return starHtml;
     };
 
     // Initial calls

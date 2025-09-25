@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let shippingOptions = [];
     let selectedShippingOption = null;
     let wishlistItems = new Set();
+    let currentSort = 'default';
 
     // --- UTILITY FUNCTIONS ---
     function showToast(message, type = 'success') {
@@ -322,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </button>
                                 <a href="/product.html?id=${product.id}" class="btn btn-outline-primary flex-grow-1" title="View details">
                                     <i class="bi bi-eye"></i>
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -417,6 +418,21 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Failed to load shipping options.', 'danger');
         }
     };
+
+    const sortProducts = (products, sortType) => {
+        switch (sortType) {
+            case 'price-asc':
+                return products.sort((a, b) => a.price - b.price);
+            case 'price-desc':
+                return products.sort((a, b) => b.price - a.price);
+            case 'name-asc':
+                return products.sort((a, b) => a.name.localeCompare(b.name));
+            case 'name-desc':
+                return products.sort((a, b) => b.name.localeCompare(a.name));
+            default:
+                return products;
+        }
+    };
     
     // --- EVENT LISTENERS ---
     const setupEventListeners = () => {
@@ -427,7 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.classList.add('active');
                 const category = card.dataset.category;
                 const filteredProducts = allProducts.filter(p => p.category === category);
-                renderProducts(filteredProducts);
+                const sortedProducts = sortProducts(filteredProducts, currentSort);
+                renderProducts(sortedProducts);
             }
         });
 
@@ -439,7 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.classList.add('active');
                     const category = card.dataset.category;
                     const filteredProducts = allProducts.filter(p => p.category === category);
-                    renderProducts(filteredProducts);
+                    const sortedProducts = sortProducts(filteredProducts, currentSort);
+                    renderProducts(sortedProducts);
                 }
             }
         });
@@ -451,9 +469,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 (p.description && p.description.toLowerCase().includes(searchTerm)) ||
                 (p.category && p.category.toLowerCase().includes(searchTerm))
             );
-            renderProducts(filteredProducts);
+            const sortedProducts = sortProducts(filteredProducts, currentSort);
+            renderProducts(sortedProducts);
             if (filteredProducts.length > 0) {
                 productGrid.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+        document.getElementById('sortDropdown').addEventListener('click', (e) => {
+            const sortType = e.target.dataset.sort;
+            if (sortType) {
+                e.preventDefault();
+                currentSort = sortType;
+                const filteredProducts = allProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchInput.value.toLowerCase()) || 
+                    (p.description && p.description.toLowerCase().includes(searchInput.value.toLowerCase())) ||
+                    (p.category && p.category.toLowerCase().includes(searchInput.value.toLowerCase()))
+                );
+                const sortedProducts = sortProducts(filteredProducts, currentSort);
+                renderProducts(sortedProducts);
+                document.getElementById('sortDropdown').textContent = `Sort by: ${e.target.textContent}`;
             }
         });
 
@@ -631,7 +666,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/products');
             if (!response.ok) throw new Error('Network response was not ok');
             allProducts = await response.json();
-            renderProducts(allProducts);
+
+            const sortedProducts = sortProducts(allProducts, currentSort);
+            renderProducts(sortedProducts);
             renderCategories(allProducts);
         } catch (error) {
             console.error('Failed to fetch initial data:', error);

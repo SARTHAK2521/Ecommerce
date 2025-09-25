@@ -59,7 +59,30 @@
         </div>
 
         <div id="product-details" style="display: none;">
-            <!-- Product details will be loaded here -->
+            <div class="row gx-lg-5 product-detail-card">
+                <div class="col-md-6 text-center product-image-container">
+                    <img src="" class="img-fluid" onerror="this.onerror=null;this.src='https://placehold.co/600x400?text=No+Image';">
+                </div>
+                <div class="col-md-6 product-details">
+                    <h6 class="text-uppercase text-primary fw-semibold" id="product-category"></h6>
+                    <h1 class="display-5 fw-bold" id="product-name"></h1>
+                    <p class="lead text-muted" id="product-description"></p>
+                    <div class="d-flex align-items-center mb-4">
+                        <h2 class="price" id="product-price"></h2>
+                        <p class="original-price ms-3 mb-0" id="product-original-price"></p>
+                    </div>
+                    <p class="limited-stock" id="product-limited-stock"></p>
+                    <p class="out-of-stock fw-bold" id="product-out-of-stock"></p>
+                    <div class="d-grid gap-2 mt-4">
+                        <button id="addToCartBtn" class="btn btn-primary btn-lg fw-semibold add-to-cart-button-details">
+                            <i class="bi bi-cart-plus me-2"></i> Add to Cart
+                        </button>
+                        <button id="wishlist-btn" class="btn btn-outline-danger btn-lg fw-semibold" title="Add to wishlist">
+                            <i class="bi bi-heart me-2"></i> Add to Wishlist
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="product-not-found" class="text-center py-5" style="display: none;">
@@ -68,9 +91,29 @@
             <p class="text-muted">The product you're looking for doesn't exist or has been removed.</p>
             <a href="/" class="btn btn-primary">Continue Shopping</a>
         </div>
-    </main>
 
-    <!-- Review Modal -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <h2 class="fw-bold mb-4">Customer Reviews</h2>
+                <div id="review-summary" class="d-flex align-items-center mb-4">
+                    <span id="average-rating" class="fs-1 fw-bold text-warning me-2"></span>
+                    <div class="d-flex flex-column me-4">
+                        <span id="review-stars"></span>
+                        <small id="review-count" class="text-muted"></small>
+                    </div>
+                    <button id="write-review-btn" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                        <i class="bi bi-pencil-square me-1"></i>Write a Review
+                    </button>
+                </div>
+                <div id="reviews-list">
+                    </div>
+                <div id="no-reviews" class="alert alert-info text-center d-none">
+                    <i class="bi bi-info-circle me-2"></i>There are no reviews for this product yet. Be the first to write one!
+                </div>
+            </div>
+        </div>
+        </main>
+
     <div class="modal fade" id="reviewModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
