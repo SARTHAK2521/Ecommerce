@@ -1,4 +1,4 @@
- /* --- GLOBAL STYLES & TYPOGRAPHY --- */
+/* --- GLOBAL STYLES & TYPOGRAPHY --- */
 :root {
     --theme-primary: #00796B; /* Softer primary green (Teal) */
     --theme-primary-hover: #004D40;
@@ -138,7 +138,38 @@ body.dark-mode .navbar .input-group .btn:hover {
     background-color: var(--theme-primary-hover);
     border-color: var(--theme-primary-hover);
 }
+
+/* --- NEW: Cart Button Style --- */
+/* Container acts as a circular button */
+.cart-link-container {
+    position: relative;
+    border: 2px solid var(--theme-primary);
+    border-radius: 50%;
+    width: 44px; /* Fixed size for the circle */
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-smooth);
+}
+.cart-link-container i {
+    color: var(--theme-primary) !important;
+    transition: color 0.2s;
+}
+.cart-link-container:hover {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+}
+.cart-link-container:hover i {
+    color: white !important;
+}
+
+/* Moving the counter badge for better placement on the circle */
 #cart-counter {
+    top: -5px !important; 
+    right: -5px !important;
+    left: auto !important;
+    start: auto !important;
     font-size: 12px;
     font-weight: 600;
     background-color: var(--theme-accent) !important;
@@ -148,9 +179,20 @@ body.dark-mode .navbar .input-group .btn:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    top: 2px !important;
-    left: 2px !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+body.dark-mode .cart-link-container {
+    border-color: var(--theme-primary);
+}
+body.dark-mode .cart-link-container i {
+    color: var(--theme-primary) !important;
+}
+body.dark-mode .cart-link-container:hover {
+    background-color: var(--theme-primary);
+}
+body.dark-mode .cart-link-container:hover i {
+    color: var(--bg-main) !important;
 }
 
 body.dark-mode #cart-counter {
@@ -205,19 +247,27 @@ body.dark-mode .dropdown-divider {
     /* Updated gradient for better look */
     background: linear-gradient(135deg, #e0f7fa 0%, #f5f7fa 100%);
     padding: 7rem 0 5rem 0;
+    /* Added subtle pattern for texture */
+    background-image: radial-gradient(var(--border-color) 0.5px, transparent 0.5px), radial-gradient(var(--border-color) 0.5px, #e0f7fa 0.5px);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    border-bottom: 3px solid var(--theme-primary);
 }
 body.dark-mode .hero-section {
     /* Dark mode background subtle gradient */
     background: linear-gradient(135deg, #1E1E1E 0%, #121212 100%);
+    background-image: radial-gradient(var(--border-color) 0.5px, transparent 0.5px), radial-gradient(var(--border-color) 0.5px, #1E1E1E 0.5px);
+    border-bottom: 3px solid var(--theme-primary);
 }
 .hero-section .btn-primary {
     background-color: var(--theme-primary);
     border-color: var(--theme-primary);
-    transition: background 0.2s, border 0.2s;
+    transition: background 0.2s, border 0.2s, transform 0.3s; /* Added transform */
 }
 .hero-section .btn-primary:hover {
     background-color: var(--theme-primary-hover);
     border-color: var(--theme-primary-hover);
+    transform: translateY(-2px); /* Subtle lift on hover */
 }
 .hero-section .display-3 {
     color: var(--text-color);
@@ -421,7 +471,7 @@ body.dark-mode .product-card .price {
     /* Set price text color explicitly for visibility */
     color: var(--theme-secondary);
 }
-.product-card .btn-add-to-cart, .product-card .btn-view-details {
+.product-card .btn-add-to-cart {
     width: 100%;
     font-weight: 500;
     background-color: var(--theme-primary);
@@ -430,8 +480,31 @@ body.dark-mode .product-card .price {
     border-radius: 6px;
     transition: background 0.2s, border 0.2s, transform 0.1s;
 }
+.product-card .btn-view-details {
+    width: 100%;
+    font-weight: 500;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: background 0.2s, border 0.2s, transform 0.1s;
+}
+.product-card .btn-view-details:hover {
+    background-color: var(--border-color);
+    border-color: var(--border-color);
+    color: var(--text-dark);
+}
 body.dark-mode .product-card .btn-add-to-cart, body.dark-mode .product-card .btn-view-details {
     color: var(--bg-main); /* Dark background text for contrast */
+}
+body.dark-mode .product-card .btn-view-details {
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
+    color: var(--text-dark);
+}
+body.dark-mode .product-card .btn-view-details:hover {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
 }
 /* NEW: Better primary button hover state */
 .product-card .btn-add-to-cart:hover, .product-card .btn-view-details:hover {
@@ -493,6 +566,12 @@ body.dark-mode .product-card .btn-add-to-cart:hover, body.dark-mode .product-car
     color: #e91e63;
     margin-top: 0.5rem;
     display: block;
+    /* NEW: Added a flash effect */
+    animation: flashStock 1.5s infinite alternate;
+}
+@keyframes flashStock {
+    0% { color: #e91e63; }
+    100% { color: var(--theme-secondary); }
 }
 .out-of-stock {
     font-size: 0.9rem;
@@ -717,6 +796,7 @@ body.dark-mode .shipping-option.active {
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overflow: hidden;
+    padding: 2rem; /* Added padding to the main container */
 }
 .product-image-container {
     padding: 2rem;
@@ -724,6 +804,7 @@ body.dark-mode .shipping-option.active {
     display: flex;
     justify-content: center;
     align-items: center;
+    border-radius: calc(var(--radius) / 2); /* Rounded corners for image container */
 }
 .product-image-container img {
     max-width: 100%;
@@ -747,31 +828,57 @@ body.dark-mode .shipping-option.active {
     border-radius: 8px;
 }
 
-/* --- ORDERS PAGE STYLES --- */
+/* --- ORDERS PAGE STYLES (Enhancing Card Look)--- */
 .order-card {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: var(--shadow);
+    /* Ensures the card component uses the default card styles, but we target its children for enhancements */
+    transition: var(--transition-smooth);
 }
-.order-header {
+.order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+.order-card .card-header {
+    background-color: var(--bg-light) !important;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
 }
-.order-item-list li {
-    padding: 0.75rem 0;
+body.dark-mode .order-card .card-header {
+    background-color: #333 !important;
+    color: var(--text-dark);
+    border-bottom-color: #444;
+}
+.order-card .order-items {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: #fff;
+    font-size: 0.9rem;
+}
+body.dark-mode .order-card .order-items {
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
+}
+.order-items > div {
     border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 0.5rem;
+    padding-top: 0.5rem;
 }
-.order-item-list li:last-child {
+.order-items > div:last-child {
     border-bottom: none;
 }
-.order-summary {
-    border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
-    margin-top: 1rem;
+
+/* --- WISHLIST PAGE HEADER --- */
+#wishlist-page-header {
+    background: linear-gradient(90deg, #e0f2f1 0%, #fffde7 100%); /* Light, gentle background */
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--theme-primary);
+}
+body.dark-mode #wishlist-page-header {
+    background: linear-gradient(90deg, #1E1E1E 0%, #282828 100%);
+    border-color: var(--border-color);
 }
 
 /* --- TOAST NOTIFICATIONS --- */
@@ -883,4 +990,42 @@ body.dark-mode .btn-wishlist.active:hover {
     footer {
         font-size: 0.95rem;
     }
+}
+
+/* --- NEW: Interactive Star Rating Component --- */
+.rating-input {
+    /* Use rtl direction to allow CSS adjacent sibling selector for the hover/checked effect */
+    display: inline-block;
+    direction: rtl; 
+}
+
+.rating-input input {
+    display: none; /* Hide the actual radio buttons */
+}
+
+.rating-input label.star-label {
+    color: #ccc; /* Default grey color */
+    font-size: 2.2rem;
+    padding: 0 2px;
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+}
+
+/* Hover effect: make all stars up to the hovered one gold (using theme-accent) */
+.rating-input label.star-label:hover,
+.rating-input label.star-label:hover ~ label.star-label {
+    color: var(--theme-accent);
+}
+
+/* Checked state: make all stars up to the checked one gold (using theme-accent) */
+.rating-input input:checked ~ label.star-label {
+    color: var(--theme-accent);
+}
+
+/* Ensure subsequent hover does not override a lower checked rating (maintains user choice) */
+.rating-input input:checked + label.star-label:hover,
+.rating-input input:checked + label.star-label:hover ~ label.star-label,
+.rating-input input:checked ~ label.star-label:hover,
+.rating-input input:checked ~ label.star-label:hover ~ label.star-label {
+    color: var(--theme-accent);
 }

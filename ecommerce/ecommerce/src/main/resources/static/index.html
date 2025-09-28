@@ -51,9 +51,9 @@
                             <li><button class="dropdown-item" id="checkout-btn">Checkout</button></li>
                         </ul>
                     </div>
-                    <a class="nav-link position-relative" href="/" aria-label="View cart" id="cart-link">
-                        <i class="bi bi-cart fs-3"></i>
-                        <span id="cart-counter" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark shadow-sm">0</span>
+                    <a class="nav-link position-relative cart-link-container" href="#" aria-label="View cart" id="cart-link">
+                        <i class="bi bi-cart fs-4"></i>
+                        <span id="cart-counter" class="position-absolute translate-middle badge rounded-pill bg-warning text-dark shadow-sm">0</span>
                     </a>
                 </div>
             </div>
@@ -69,9 +69,17 @@
     <main>
         <section class="hero-section text-center py-5">
             <div class="container">
-                <h1 class="display-3 fw-bold mb-3" style="color:var(--text-dark);">Unbeatable Deals, Unmatched Quality.</h1>
-                <p class="lead text-muted col-lg-7 mx-auto mb-4">Discover a curated selection of products designed to fit your lifestyle. Free shipping on orders over $50.</p>
-                <a href="#product-grid" class="btn btn-primary btn-lg shadow-sm px-4">Shop New Arrivals <i class="bi bi-arrow-right ms-2"></i></a>
+                <div class="row align-items-center">
+                    <div class="col-lg-7 text-center text-lg-start">
+                        <h1 class="display-3 fw-bold mb-3" style="color:var(--text-dark);">Unbeatable Deals, Unmatched Quality.</h1>
+                        <p class="lead text-muted col-lg-10 mx-auto mx-lg-0 mb-4">Discover a curated selection of products designed to fit your lifestyle. Free shipping on orders over $50.</p>
+                        <a href="#product-grid" class="btn btn-primary btn-lg shadow-sm px-4">Shop New Arrivals <i class="bi bi-arrow-right ms-2"></i></a>
+                    </div>
+                    <div class="col-lg-5 d-none d-lg-block">
+                         <i class="bi bi-truck-flatbed text-primary" style="font-size: 6rem; opacity: 0.7;"></i>
+                        <i class="bi bi-box-seam-fill text-accent" style="font-size: 6rem; margin-left: -20px;"></i>
+                    </div>
+                </div>
             </div>
         </section>
         

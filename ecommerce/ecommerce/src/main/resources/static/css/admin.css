@@ -6,111 +6,103 @@ body {
 }
 
 /* Dark Mode Styles for Admin */
+/* Note: We use body.dark-mode to inherit style.css variables, but override specific components here */
 body.dark-mode {
-    background-color: #1A202C;
-    color: #E8EAF6;
+    /* Variables set in style.css: --bg-main, --bg-card, --text-dark, --theme-primary */
 }
 
 body.dark-mode .navbar {
-    background-color: #1A202C;
+    background-color: var(--bg-light) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    border-bottom: 1px solid #4A5568;
+    border-bottom: 1px solid var(--border-color);
 }
 
 body.dark-mode .navbar .nav-link {
-    color: #E8EAF6 !important;
+    color: var(--text-dark) !important;
 }
 
 body.dark-mode .navbar .nav-link:hover {
-    color: #64B5F6 !important;
+    color: var(--theme-primary) !important;
 }
 
-body.dark-mode .navbar .form-control {
-    background-color: #2D3748;
-    color: #E8EAF6;
-    border-color: #4A5568;
+body.dark-mode .btn-outline-dark {
+    border-color: var(--text-dark);
+    color: var(--text-dark);
 }
-
-body.dark-mode .navbar .form-control:focus {
-    background-color: #2D3748;
-    color: #E8EAF6;
-    border-color: #64B5F6;
-    box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.25);
-}
-
-body.dark-mode .navbar .btn {
-    background-color: #64B5F6;
-    border-color: #64B5F6;
-    color: #1A202C;
-}
-
-body.dark-mode .navbar .btn:hover {
-    background-color: #42A5F5;
-    border-color: #42A5F5;
+body.dark-mode .btn-outline-dark:hover {
+    background-color: var(--theme-secondary);
+    color: var(--bg-main);
 }
 
 body.dark-mode .table-responsive {
-    background-color: #2D3748;
-    border-color: #4A5568;
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
 }
 
 body.dark-mode .table {
-    color: #E8EAF6;
+    color: var(--text-dark);
+}
+
+body.dark-mode .table-striped>tbody>tr:nth-of-type(odd)>* {
+    --bs-table-bg-type: var(--bg-light); /* Light stripes */
 }
 
 body.dark-mode .table th {
-    background-color: #4A5568;
-    color: #E8EAF6;
-    border-color: #4A5568;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    border-color: var(--border-color);
+}
+body.dark-mode .table .table-dark {
+    --bs-table-bg: var(--text-color);
 }
 
 body.dark-mode .table td {
-    border-color: #4A5568;
+    border-color: var(--border-color);
 }
 
 body.dark-mode .modal-content {
-    background-color: #2D3748;
-    color: #E8EAF6;
-    border-color: #4A5568;
+    background-color: var(--bg-card);
+    color: var(--text-dark);
+    border-color: var(--border-color);
 }
 
 body.dark-mode .modal-header {
-    border-bottom-color: #4A5568;
+    border-bottom-color: var(--border-color);
 }
 
 body.dark-mode .modal-footer {
-    border-top-color: #4A5568;
+    border-top-color: var(--border-color);
 }
 
 body.dark-mode .form-control {
-    background-color: #4A5568;
-    border-color: #4A5568;
-    color: #E8EAF6;
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
+    color: var(--text-dark);
 }
 
 body.dark-mode .form-control:focus {
-    background-color: #4A5568;
-    border-color: #64B5F6;
-    color: #E8EAF6;
-    box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.25);
+    background-color: var(--bg-light);
+    border-color: var(--theme-primary);
+    color: var(--text-dark);
+    box-shadow: 0 0 0 0.2rem rgba(77, 208, 225, 0.25);
 }
 
 body.dark-mode .form-label {
-    color: #E8EAF6;
+    color: var(--text-dark);
 }
 
 body.dark-mode h1 {
-    color: #64B5F6;
+    color: var(--theme-primary);
 }
 
 body.dark-mode .btn-primary {
-    background-color: #64B5F6;
-    border-color: #64B5F6;
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
 }
 
 body.dark-mode .btn-primary:hover {
-    background-color: #42A5F5;
-    border-color: #42A5F5;
+    background-color: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
 }
 
 .navbar {
@@ -155,8 +147,35 @@ h1 {
     border: 1px solid #dee2e6;
 }
 
-.table .btn {
-    margin-right: 5px;
+.table .btn-info {
+    background-color: #00796B; /* Teal to match theme primary */
+    border-color: #00796B;
+    color: white;
+}
+.table .btn-info:hover {
+    background-color: #004D40;
+    border-color: #004D40;
+}
+
+.table .btn-warning {
+    background-color: #FFC107; /* Orange/Yellow for Edit */
+    border-color: #FFC107;
+    color: #333;
+}
+.table .btn-warning:hover {
+    background-color: #E6A200;
+    border-color: #E6A200;
+    color: #333;
+}
+
+.table .btn-danger {
+    background-color: #DC3545; /* Red for Delete */
+    border-color: #DC3545;
+    color: white;
+}
+.table .btn-danger:hover {
+    background-color: #C82333;
+    border-color: #C82333;
 }
 
 .modal-header {

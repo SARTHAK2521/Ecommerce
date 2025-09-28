@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusIcon = getStatusIcon(order.status);
 
             orderCard.innerHTML = `
-                <div class="card h-100 shadow-sm border-0">
+                <div class="card order-card h-100 shadow-sm border-0">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="mb-0 fw-bold">Order #${order.id}</h6>
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <div class="d-flex align-items-center">
                                             <img src="${item.product.imageUrl}" 
                                                  class="rounded me-2" 
-                                                 style="width: 40px; height: 40px; object-fit: cover;"
+                                                 style="width: 40px; height: 40px; object-fit: contain;"
                                                  onerror="this.onerror=null;this.src='https://placehold.co/40x40?text=No+Image';">
                                             <div>
                                                 <small class="fw-semibold">${item.product.name}</small>

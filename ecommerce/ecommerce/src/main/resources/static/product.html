@@ -42,9 +42,9 @@
                             <li id="logout-link-li" class="d-none"><a class="dropdown-item" href="#" id="logout-btn">Log Out</a></li>
                         </ul>
                     </div>
-                    <a class="nav-link position-relative" href="/" aria-label="View cart" id="cart-link">
-                        <i class="bi bi-cart fs-3"></i>
-                        <span id="cart-counter" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark shadow-sm">0</span>
+                    <a class="nav-link position-relative cart-link-container" href="#" aria-label="View cart" id="cart-link">
+                        <i class="bi bi-cart fs-4"></i>
+                        <span id="cart-counter" class="position-absolute translate-middle badge rounded-pill bg-warning text-dark shadow-sm">0</span>
                     </a>
                 </div>
             </div>
@@ -81,7 +81,6 @@
                             <button id="wishlist-btn" class="btn btn-outline-danger btn-lg fw-semibold flex-grow-1" title="Add to wishlist">
                                 <i class="bi bi-heart me-2"></i> Add to Wishlist
                             </button>
-                            <!-- NEW: External Search Button -->
                             <button id="externalSearchBtn" class="btn btn-outline-info btn-lg fw-semibold flex-grow-1" title="Search for external reviews">
                                 <i class="bi bi-search me-2"></i> Search Reviews
                             </button>
@@ -120,7 +119,6 @@
         </div>
         </main>
 
-    <!-- Review Submission Modal -->
     <div class="modal fade" id="reviewModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -159,7 +157,6 @@
         </div>
     </div>
     
-    <!-- External Search Results Modal (NEW) -->
     <div class="modal fade" id="externalSearchModal" tabindex="-1" aria-labelledby="externalSearchModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -180,8 +177,7 @@
                         
                         <h6 class="fw-bold text-info mb-2">Sources (for verification):</h6>
                         <ul id="source-list" class="list-group list-group-flush small">
-                            <!-- Sources will be injected here -->
-                        </ul>
+                            </ul>
                         <div id="no-sources" class="alert alert-warning small mt-3" style="display:none;">No specific sources were cited, relying on general knowledge.</div>
                     </div>
                 </div>
