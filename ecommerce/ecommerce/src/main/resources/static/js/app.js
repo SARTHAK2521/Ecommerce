@@ -358,9 +358,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
             });
-            container.querySelectorAll('.btn-wishlist').forEach(btn => {
-                btn.onclick = async () => { await toggleWishlist(productId); };
-            });
+        });
+        
+        // FIX: Attach listener directly to all wishlist buttons within the recently viewed grid
+        recentlyViewedGrid.querySelectorAll('.btn-wishlist').forEach(btn => {
+            const productId = parseInt(btn.dataset.productId, 10);
+            btn.onclick = async () => { await toggleWishlist(productId); };
         });
     }
 
@@ -609,9 +612,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
             });
-            container.querySelectorAll('.btn-wishlist').forEach(btn => {
-                btn.onclick = async () => { await toggleWishlist(productId); };
-            });
+        });
+        
+        // FIX: Attach listener directly to all wishlist buttons on the product grid
+        productGrid.querySelectorAll('.btn-wishlist').forEach(btn => {
+            const productId = parseInt(btn.dataset.productId, 10);
+            btn.onclick = async () => { await toggleWishlist(productId); };
         });
     };
 
