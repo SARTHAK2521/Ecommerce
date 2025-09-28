@@ -52,6 +52,13 @@
     </nav>
 
     <main class="container my-5">
+        
+        <div class="mb-4">
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i> Back to Shop
+            </a>
+        </div>
+        
         <div id="loading-spinner" class="text-center py-5" style="display: none;">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -100,13 +107,13 @@
         <div class="row mt-5">
             <div class="col-12">
                 <h2 class="fw-bold mb-4">Customer Reviews</h2>
-                <div id="review-summary" class="d-flex align-items-center mb-4">
+                <div id="review-summary" class="d-flex align-items-center mb-4 review-summary-box">
                     <span id="average-rating" class="fs-1 fw-bold text-warning me-2"></span>
                     <div class="d-flex flex-column me-4">
                         <span id="review-stars"></span>
                         <small id="review-count" class="text-muted"></small>
                     </div>
-                    <button id="write-review-btn" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                    <button id="write-review-btn" class="btn btn-outline-primary ms-auto" data-bs-toggle="modal" data-bs-target="#reviewModal">
                         <i class="bi bi-pencil-square me-1"></i>Write a Review
                     </button>
                 </div>

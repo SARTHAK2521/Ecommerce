@@ -183,6 +183,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // NEW: Function to log product view for "Recently Viewed" feature
+    async function logProductView(productId) {
+        const userId = sessionStorage.getItem('userId');
+        
+        // Log view only if the user is logged in
+        if (!userId) {
+            return;
+        }
+        
+        try {
+            await fetch('/api/analytics/log-view', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: productId,
+                    userId: userId,
+                    viewStart: new Date().toISOString()
+                    // durationSeconds is intentionally omitted for simplicity in this endpoint call
+                })
+            });
+        } catch (error) {
+            console.error('Failed to log product view:', error);
+        }
+    }
+
 
     async function checkAuthenticationAndSetUserId() {
         try {
@@ -472,6 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
             renderProductDetails(product);
             await fetchAndRenderReviews(productId);
             await checkCanUserReview(productId);
+            
+            // NEW: Log the product view after successful load
+            await logProductView(productId);
+
         } catch (error) {
             console.error('Error fetching product details:', error);
             errorMessage.style.display = 'block';
@@ -528,6 +557,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const statsResponse = await fetch(`/api/reviews/product/${productId}/stats`);
             if (statsResponse.ok) {
                 const stats = await statsResponse.json();
+                
+                // NEW: Use review-summary-box class which is added to the div in HTML
+                const reviewSummaryElement = document.getElementById('review-summary');
+                reviewSummaryElement.classList.add('review-summary-box');
+                
                 document.getElementById('average-rating').textContent = stats.averageRating || '0.0';
                 document.getElementById('review-count').textContent = `${stats.reviewCount} reviews`;
                 const starHtml = getStarRating(stats.averageRating);

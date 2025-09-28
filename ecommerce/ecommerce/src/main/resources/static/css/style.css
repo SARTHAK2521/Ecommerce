@@ -649,10 +649,56 @@ body.dark-mode .quantity-display {
     width: 100%;
 }
 
-/* --- LOADING SPINNER --- */
-#loading-spinner {
-    margin: 2rem 0;
+/* --- RECENTLY VIEWED SECTION --- */
+#recently-viewed-section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px dashed var(--border-color);
+    margin-bottom: 4rem !important;
 }
+
+/* --- LOADING SKELETON UI --- */
+@keyframes loading-shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+    100% {
+        background-position: 468px 0;
+    }
+}
+.loading-skeleton {
+    background: var(--bg-light);
+    background-image: linear-gradient(to right, var(--bg-light) 0%, var(--border-color) 20%, var(--bg-light) 40%);
+    background-repeat: no-repeat;
+    background-size: 800px 100%;
+    animation: loading-shimmer 1.2s linear infinite;
+    border-radius: var(--radius);
+}
+body.dark-mode .loading-skeleton {
+    background: var(--bg-card);
+    background-image: linear-gradient(to right, var(--bg-card) 0%, #424242 20%, var(--bg-card) 40%);
+}
+.skeleton-card {
+    min-height: 350px;
+    height: 100%;
+    border-radius: var(--radius);
+    overflow: hidden;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    background-color: var(--bg-card);
+}
+.skeleton-img {
+    height: 180px;
+    margin-bottom: 1rem;
+    border-radius: calc(var(--radius) / 2);
+}
+.skeleton-line {
+    height: 12px;
+    margin-bottom: 8px;
+}
+.skeleton-line.title { width: 80%; }
+.skeleton-line.price { width: 40%; height: 20px; }
+.skeleton-line.button { height: 40px; margin-top: 1rem; }
 
 /* --- NO RESULTS --- */
 #no-results {
@@ -828,6 +874,58 @@ body.dark-mode .shipping-option.active {
     border-radius: 8px;
 }
 
+/* NEW: Review Summary Box Style */
+.review-summary-box {
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-light);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+body.dark-mode .review-summary-box {
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
+}
+.review-summary-box #average-rating {
+    font-size: 3.5rem; /* Make rating stand out */
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* --- NEW FEATURE: STICKY CHECKOUT BAR (Minicart) --- */
+.sticky-checkout-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1030; /* Below nav (1050) but above everything else */
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    padding: 0.75rem 0;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out;
+}
+.sticky-checkout-bar.visible {
+    transform: translateY(0);
+}
+body.dark-mode .sticky-checkout-bar {
+    background-color: var(--bg-light);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
+    border-top-color: var(--border-color);
+}
+.sticky-checkout-bar .total-info {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--theme-primary);
+}
+.sticky-checkout-bar .btn-checkout {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+
 /* --- ORDERS PAGE STYLES (Enhancing Card Look)--- */
 .order-card {
     /* Ensures the card component uses the default card styles, but we target its children for enhancements */
@@ -990,6 +1088,33 @@ body.dark-mode .btn-wishlist.active:hover {
     footer {
         font-size: 0.95rem;
     }
+    .sticky-checkout-bar .total-info {
+        font-size: 1rem;
+    }
+    .sticky-checkout-bar .btn-checkout {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* --- FORM FIELD POLISH --- */
+.form-control, .form-select {
+    transition: all 0.3s ease;
+    border-color: var(--border-color);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 121, 107, 0.25); /* Primary color focus ring */
+}
+body.dark-mode .form-control, body.dark-mode .form-select {
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
+    color: var(--text-dark);
+}
+body.dark-mode .form-control:focus, body.dark-mode .form-select:focus {
+    background-color: var(--bg-light);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 0.2rem rgba(77, 208, 225, 0.3);
 }
 
 /* --- NEW: Interactive Star Rating Component --- */

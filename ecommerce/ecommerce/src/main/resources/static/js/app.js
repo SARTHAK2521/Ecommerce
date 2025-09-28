@@ -1,10 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     const productGrid = document.getElementById('product-grid');
+    const skeletonGrid = document.getElementById('skeleton-grid'); // NEW
     const categoryFilters = document.getElementById('category-filters');
     const searchInput = document.getElementById('search-input');
     const noResults = document.getElementById('no-results');
     const cartCounter = document.getElementById('cart-counter');
-    const loadingSpinner = document.getElementById('loading-spinner');
+    // const loadingSpinner = document.getElementById('loading-spinner'); // REMOVED: Using skeleton instead
     const checkoutBtn = document.getElementById('checkout-btn');
     const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
     const cartItemsList = document.getElementById('cart-items-list');
@@ -23,6 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // New dark mode elements
     const darkModeToggle = document.getElementById('dark-mode-toggle');
     const darkModeIcon = document.getElementById('dark-mode-icon');
+    
+    // NEW DOM elements for Sticky Bar
+    const stickyCheckoutBar = document.getElementById('sticky-checkout-bar');
+    const stickyCartCount = document.getElementById('sticky-cart-count');
+    const stickyCartTotal = document.getElementById('sticky-cart-total');
+    const stickyCheckoutBtn = document.getElementById('sticky-checkout-btn');
+    
+    // NEW: Recently Viewed Elements
+    const recentlyViewedSection = document.getElementById('recently-viewed-section');
+    const recentlyViewedGrid = document.getElementById('recently-viewed-grid');
+
     
     let allProducts = [];
     let cart = [];
@@ -126,6 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 authLink.classList.add('d-none');
                 ordersLinkLi.classList.remove('d-none');
                 logoutLinkLi.classList.remove('d-none');
+                
+                // NEW: Fetch recently viewed products if authenticated
+                await fetchRecentlyViewed();
             } else {
                 sessionStorage.removeItem('userId');
                 sessionStorage.removeItem('username');
@@ -133,6 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 authLink.classList.remove('d-none');
                 ordersLinkLi.classList.add('d-none');
                 logoutLinkLi.classList.add('d-none');
+                
+                // NEW: Hide recently viewed section if not authenticated
+                recentlyViewedSection.classList.add('d-none');
             }
         } catch (error) {
             console.error('Error checking auth:', error);
@@ -192,16 +210,33 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Failed to load cart.', 'danger');
             cart = [];
         } finally {
-            updateCartCounter();
-            renderProducts(allProducts);
+            updateCartDisplay(); // NEW: Call updated display function
+            // Ensure products are re-rendered after cart is fetched to update quantity controls
+            const currentFilteredProducts = filterAndSortProducts(allProducts, searchInput.value, 'default');
+            renderProducts(currentFilteredProducts);
         }
     }
-
-    function updateCartCounter() {
+    
+    // NEW: Central function to update all cart-related UI elements
+    function updateCartDisplay() {
         const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        // 1. Navbar Counter
         if (cartCounter) {
             cartCounter.textContent = totalItems;
             cartCounter.setAttribute('aria-label', `Cart with ${totalItems} items`);
+        }
+
+        // 2. Sticky Bar
+        if (stickyCheckoutBar) {
+            if (totalItems > 0) {
+                stickyCheckoutBar.classList.add('visible');
+                stickyCartCount.textContent = totalItems;
+                stickyCartTotal.textContent = `$${subtotal.toFixed(2)}`;
+            } else {
+                stickyCheckoutBar.classList.remove('visible');
+            }
         }
     }
 
@@ -217,8 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
             stockQuantity: item.product.stockQuantity,
             quantity: item.quantity
         }));
-        updateCartCounter();
-        renderProducts(allProducts);
+        updateCartDisplay(); // NEW: Use the centralized display function
+        
+        // Re-render only the currently displayed products to reflect cart changes
+        const currentFilteredProducts = filterAndSortProducts(allProducts, searchInput.value, 'default');
+        renderProducts(currentFilteredProducts);
     }
     
     async function addToCart(productId, quantity, productName) {
@@ -258,9 +296,150 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- RENDER PRODUCTS (UPDATED HTML STRUCTURE FOR PROFESSIONAL LOOK) ---
+    // --- NEW: RECENTLY VIEWED FEATURE ---
+    async function fetchRecentlyViewed() {
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            recentlyViewedSection.classList.add('d-none');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/analytics/recently-viewed');
+            if (response.ok) {
+                const products = await response.json();
+                renderRecentlyViewed(products);
+            } else {
+                recentlyViewedSection.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error('Error fetching recently viewed:', error);
+            recentlyViewedSection.classList.add('d-none');
+        }
+    }
+    
+    function renderRecentlyViewed(products) {
+        if (products.length === 0) {
+            recentlyViewedSection.classList.add('d-none');
+            return;
+        }
+        
+        recentlyViewedGrid.innerHTML = '';
+        products.forEach(product => {
+            const productCardHtml = createProductCardHtml(product);
+            const productCard = document.createElement('div');
+            // Use a specific class for recently viewed cards if needed, and different column classes for smaller size
+            productCard.className = 'col recently-viewed-card-wrapper';
+            productCard.innerHTML = productCardHtml;
+            recentlyViewedGrid.appendChild(productCard);
+        });
+        
+        recentlyViewedSection.classList.remove('d-none');
+        updateWishlistButtons(); // Update buttons on the new grid
+        setupRecentlyViewedListeners(); // Setup listeners for cart controls on new grid
+    }
+
+    function setupRecentlyViewedListeners() {
+         recentlyViewedGrid.querySelectorAll('.add-to-cart-container').forEach(container => {
+            const productId = parseInt(container.dataset.productId, 10);
+            const product = allProducts.find(p => p.id === productId);
+            
+            container.querySelectorAll('.btn-add-to-cart').forEach(btn => {
+                btn.onclick = async () => { await addToCart(productId, 1, product.name); };
+            });
+            container.querySelectorAll('.increment').forEach(btn => {
+                btn.onclick = async () => { await addToCart(productId, 1, product.name); };
+            });
+            container.querySelectorAll('.decrement').forEach(btn => {
+                btn.onclick = async () => { 
+                    const cartItem = cart.find(item => item.id === productId);
+                    if (cartItem && cartItem.quantity > 0) {
+                        await addToCart(productId, -1, product.name); 
+                    }
+                };
+            });
+            container.querySelectorAll('.btn-wishlist').forEach(btn => {
+                btn.onclick = async () => { await toggleWishlist(productId); };
+            });
+        });
+    }
+
+    // --- RENDER PRODUCTS (Refactored to extract card HTML generation) ---
+    const createProductCardHtml = (product) => {
+        const cartItem = cart.find(item => item.id === product.id);
+        const isInCart = !!cartItem;
+        const quantity = isInCart ? cartItem.quantity : 0;
+        const isOutOfStock = product.stockQuantity <= 0;
+        const isLimitedStock = product.stockQuantity > 0 && product.stockQuantity <= 10;
+        const discountPercent = product.onSale ? ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0) : 0;
+
+        return `
+            <div class="card h-100 product-card shadow border-0 position-relative">
+                ${product.onSale ? `<span class="discount-badge">-${discountPercent}%</span>` : ''}
+                <div class="product-img-container bg-white p-3 d-flex align-items-center justify-content-center position-relative" style="min-height:180px;">
+                    <a href="/product.html?id=${product.id}" tabindex="0">
+                        <img src="${product.imageUrl}" class="card-img-top" alt="${product.name}" aria-label="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=No+Image';" style="max-height:140px;object-fit:contain;">
+                    </a>
+                    <button class="btn btn-outline-danger btn-sm btn-wishlist position-absolute top-0 end-0 m-2 rounded-circle" data-product-id="${product.id}" title="Add to wishlist" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 10;">
+                        <i class="bi bi-heart fs-6"></i>
+                    </button>
+                </div>
+                <div class="card-body product-card-body d-flex flex-column">
+                    <p class="category mb-1 text-uppercase text-primary small fw-semibold">${product.category || 'Uncategorized'}</p>
+                    <h5 class="card-title product-title mb-2">
+                        <a href="/product.html?id=${product.id}" class="text-dark text-decoration-none" aria-label="View details for ${product.name}">${product.name}</a>
+                    </h5>
+                    <div class="price-flex">
+                        <p class="card-text price mb-0 fw-bold fs-5 text-success">$${product.price.toFixed(2)}</p>
+                        ${product.onSale ? `<p class="card-text original-price mb-0">$${product.originalPrice.toFixed(2)}</p>` : ''}
+                    </div>
+                    ${isLimitedStock ? `<span class="limited-stock"><i class="bi bi-exclamation-circle me-1"></i>Only ${product.stockQuantity} left!</span>` : ''}
+                    ${isOutOfStock ? `<span class="out-of-stock fw-bold"><i class="bi bi-x-circle me-1"></i>Out of Stock</span>` : ''}
+                    <div class="add-to-cart-container mt-auto" data-product-id="${product.id}">
+                        ${isInCart ? 
+                            `<div class="quantity-controls d-flex align-items-center justify-content-center">
+                                <button class="quantity-btn decrement btn btn-outline-secondary rounded-circle me-2" aria-label="Decrease quantity" style="width:32px;height:32px;">-</button>
+                                <span class="quantity-display px-2 fw-semibold">${quantity}</span>
+                                <button class="quantity-btn increment btn btn-outline-secondary rounded-circle ms-2" aria-label="Increase quantity" style="width:32px;height:32px;">+</button>
+                            </div>` :
+                            `<button class="btn btn-primary btn-add-to-cart w-100 fw-semibold" aria-label="Add ${product.name} to cart" ${isOutOfStock ? 'disabled' : ''}><i class="bi bi-cart-plus me-1"></i>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>`
+                        }
+                        <a href="/product.html?id=${product.id}" class="btn btn-outline-secondary btn-view-details w-100 mt-2" title="View details">
+                            <i class="bi bi-eye me-1"></i>View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
+    // NEW: Function to render the skeleton UI
+    function renderSkeleton() {
+        productGrid.classList.add('d-none');
+        skeletonGrid.classList.remove('d-none');
+        skeletonGrid.innerHTML = '';
+        for (let i = 0; i < 8; i++) {
+            const skeletonCard = document.createElement('div');
+            skeletonCard.className = 'col';
+            skeletonCard.innerHTML = `
+                <div class="card skeleton-card shadow border-0">
+                    <div class="skeleton-img loading-skeleton"></div>
+                    <div class="skeleton-line loading-skeleton title"></div>
+                    <div class="skeleton-line loading-skeleton title" style="width: 60%;"></div>
+                    <div class="skeleton-line loading-skeleton price mt-3"></div>
+                    <div class="skeleton-line loading-skeleton button"></div>
+                </div>
+            `;
+            skeletonGrid.appendChild(skeletonCard);
+        }
+    }
+
+    // --- RENDER PRODUCTS (UPDATED to toggle skeleton) ---
     const renderProducts = (productsToRender) => {
-        if (loadingSpinner) loadingSpinner.style.display = 'none';
+        // Hide skeleton
+        skeletonGrid.classList.add('d-none');
+        productGrid.classList.remove('d-none');
+        
         productGrid.innerHTML = '';
         if (productsToRender.length === 0) {
             noResults.style.display = 'block';
@@ -281,61 +460,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         productsToRender.forEach(product => {
-            const cartItem = cart.find(item => item.id === product.id);
-            const isInCart = !!cartItem;
-            const quantity = isInCart ? cartItem.quantity : 0;
-            const isOutOfStock = product.stockQuantity <= 0;
-            const isLimitedStock = product.stockQuantity > 0 && product.stockQuantity <= 10;
-            const discountPercent = product.onSale ? ((product.originalPrice - product.price) / product.originalPrice * 100).toFixed(0) : 0;
-
+            const productCardHtml = createProductCardHtml(product);
             const productCard = document.createElement('div');
             productCard.className = 'col';
-            productCard.innerHTML = `
-                <div class="card h-100 product-card shadow border-0 position-relative">
-                    ${product.onSale ? `<span class="discount-badge">-${discountPercent}%</span>` : ''}
-                    <div class="product-img-container bg-white p-3 d-flex align-items-center justify-content-center position-relative" style="min-height:180px;">
-                        <a href="/product.html?id=${product.id}" tabindex="0">
-                            <img src="${product.imageUrl}" class="card-img-top" alt="${product.name}" aria-label="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=No+Image';" style="max-height:140px;object-fit:contain;">
-                        </a>
-                        <!-- NEW: Wishlist button as an overlay, outside the body for a cleaner look -->
-                        <button class="btn btn-outline-danger btn-sm btn-wishlist position-absolute top-0 end-0 m-2 rounded-circle" data-product-id="${product.id}" title="Add to wishlist" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 10;">
-                            <i class="bi bi-heart fs-6"></i>
-                        </button>
-                    </div>
-                    <div class="card-body product-card-body d-flex flex-column">
-                        <p class="category mb-1 text-uppercase text-primary small fw-semibold">${product.category || 'Uncategorized'}</p>
-                        <h5 class="card-title product-title mb-2">
-                            <a href="/product.html?id=${product.id}" class="text-dark text-decoration-none" aria-label="View details for ${product.name}">${product.name}</a>
-                        </h5>
-                        <div class="price-flex">
-                            <p class="card-text price mb-0 fw-bold fs-5 text-success">$${product.price.toFixed(2)}</p>
-                            ${product.onSale ? `<p class="card-text original-price mb-0">$${product.originalPrice.toFixed(2)}</p>` : ''}
-                        </div>
-                        ${isLimitedStock ? `<span class="limited-stock"><i class="bi bi-exclamation-circle me-1"></i>Only ${product.stockQuantity} left!</span>` : ''}
-                        ${isOutOfStock ? `<span class="out-of-stock fw-bold"><i class="bi bi-x-circle me-1"></i>Out of Stock</span>` : ''}
-                        <div class="add-to-cart-container mt-auto" data-product-id="${product.id}">
-                            ${isInCart ? 
-                                `<div class="quantity-controls d-flex align-items-center justify-content-center">
-                                    <button class="quantity-btn decrement btn btn-outline-secondary rounded-circle me-2" aria-label="Decrease quantity" style="width:32px;height:32px;">-</button>
-                                    <span class="quantity-display px-2 fw-semibold">${quantity}</span>
-                                    <button class="quantity-btn increment btn btn-outline-secondary rounded-circle ms-2" aria-label="Increase quantity" style="width:32px;height:32px;">+</button>
-                                </div>` :
-                                `<button class="btn btn-primary btn-add-to-cart w-100 fw-semibold" aria-label="Add ${product.name} to cart" ${isOutOfStock ? 'disabled' : ''}><i class="bi bi-cart-plus me-1"></i>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>`
-                            }
-                            <!-- Replaced the old btn-group with a standalone View Details button for better focus -->
-                            <a href="/product.html?id=${product.id}" class="btn btn-outline-secondary btn-view-details w-100 mt-2" title="View details">
-                                <i class="bi bi-eye me-1"></i>View Details
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
+            productCard.innerHTML = productCardHtml;
             productGrid.appendChild(productCard);
         });
         updateWishlistButtons(); // Ensure button states are updated after rendering
+        setupProductGridListeners(); // Re-attach listeners to the main grid
     };
 
-    // --- RENDER CATEGORIES ---
+    const filterAndSortProducts = (products, searchTerm, sortType) => {
+        let filtered = products.filter(p =>
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+
+        // Apply category filter if one is active
+        const activeCategoryCard = document.querySelector('.category-card.active');
+        if (activeCategoryCard) {
+            const category = activeCategoryCard.dataset.category;
+            filtered = filtered.filter(p => p.category === category);
+        }
+        
+        return sortProducts(filtered, sortType);
+    };
+
+    // --- RENDER CATEGORIES (No change) ---
     const renderCategories = (products) => {
         const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
         const categoryIcons = {
@@ -364,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- RENDER CHECKOUT MODAL ---
+    // --- RENDER CHECKOUT MODAL (No change) ---
     const renderCheckoutModal = () => {
         // Render cart items
         cartItemsList.innerHTML = '';
@@ -436,7 +588,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // --- EVENT LISTENERS ---
+    // --- EVENT LISTENERS (Centralized listeners for dynamically generated content) ---
+    const setupProductGridListeners = () => {
+        // Re-attach listeners for all buttons on the main product grid
+        productGrid.querySelectorAll('.add-to-cart-container').forEach(container => {
+            const productId = parseInt(container.dataset.productId, 10);
+            const product = allProducts.find(p => p.id === productId);
+            
+            container.querySelectorAll('.btn-add-to-cart').forEach(btn => {
+                btn.onclick = async () => { await addToCart(productId, 1, product.name); };
+            });
+            container.querySelectorAll('.increment').forEach(btn => {
+                btn.onclick = async () => { await addToCart(productId, 1, product.name); };
+            });
+            container.querySelectorAll('.decrement').forEach(btn => {
+                btn.onclick = async () => { 
+                    const cartItem = cart.find(item => item.id === productId);
+                    if (cartItem && cartItem.quantity > 0) {
+                        await addToCart(productId, -1, product.name); 
+                    }
+                };
+            });
+            container.querySelectorAll('.btn-wishlist').forEach(btn => {
+                btn.onclick = async () => { await toggleWishlist(productId); };
+            });
+        });
+    };
+
     const setupEventListeners = () => {
         categoryFilters.addEventListener('click', (e) => {
             const card = e.target.closest('.category-card');
@@ -465,14 +643,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredProducts = allProducts.filter(p =>
-                p.name.toLowerCase().includes(searchTerm) ||
-                (p.description && p.description.toLowerCase().includes(searchTerm)) ||
-                (p.category && p.category.toLowerCase().includes(searchTerm))
-            );
-            const sortedProducts = sortProducts(filteredProducts, currentSort);
-            renderProducts(sortedProducts);
+            const searchTerm = e.target.value;
+            const filteredProducts = filterAndSortProducts(allProducts, searchTerm, currentSort);
+            renderProducts(filteredProducts);
             if (filteredProducts.length > 0) {
                 productGrid.scrollIntoView({ behavior: 'smooth' });
             }
@@ -483,45 +656,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sortType) {
                 e.preventDefault();
                 currentSort = sortType;
-                const filteredProducts = allProducts.filter(p => 
-                    p.name.toLowerCase().includes(searchInput.value.toLowerCase()) || 
-                    (p.description && p.description.toLowerCase().includes(searchInput.value.toLowerCase())) ||
-                    (p.category && p.category.toLowerCase().includes(searchInput.value.toLowerCase()))
-                );
-                const sortedProducts = sortProducts(filteredProducts, currentSort);
-                renderProducts(sortedProducts);
+                const filteredProducts = filterAndSortProducts(allProducts, searchInput.value, currentSort);
+                renderProducts(filteredProducts);
                 document.getElementById('sortDropdown').textContent = `Sort by: ${e.target.textContent}`;
             }
         });
-
-        productGrid.addEventListener('click', async e => {
-            // Handle wishlist buttons (new location/structure)
-            if (e.target.closest('.btn-wishlist')) {
-                const wishlistBtn = e.target.closest('.btn-wishlist');
-                const productId = parseInt(wishlistBtn.dataset.productId, 10);
-                await toggleWishlist(productId);
-                return;
-            }
-
-            // Handle cart buttons
-            const addToCartContainer = e.target.closest('.add-to-cart-container');
-            if (!addToCartContainer) return;
-            
-            const productId = parseInt(addToCartContainer.dataset.productId, 10);
-            const product = allProducts.find(p => p.id === productId);
-
-            if (e.target.classList.contains('btn-add-to-cart')) {
-                await addToCart(productId, 1, product.name);
-            } else if (e.target.classList.contains('increment')) {
-                await addToCart(productId, 1, product.name);
-            } else if (e.target.classList.contains('decrement')) {
-                 const cartItem = cart.find(item => item.id === productId);
-                if (cartItem && cartItem.quantity > 0) {
-                     await addToCart(productId, -1, product.name);
-                }
-            }
-        });
         
+        // NEW: Event listener for the sticky bar's checkout button
+        if (stickyCheckoutBtn) {
+            stickyCheckoutBtn.addEventListener('click', async () => {
+                // Reuse existing checkout button logic
+                checkoutBtn.click();
+            });
+        }
+        
+        // Re-use existing cart/checkout logic for the regular checkout button click
         checkoutBtn.addEventListener('click', async () => {
             const userId = sessionStorage.getItem('userId');
             if (!userId) {
@@ -589,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('Order placed successfully!');
                     checkoutModal.hide();
                     cart = [];
-                    updateCartCounter();
+                    updateCartDisplay(); // Update display after order
                     renderProducts(allProducts);
                     // Clear the server-side cart after a successful order
                     const cartResponse = await fetch(`/api/cart/${userId}`, { method: 'DELETE' });
@@ -621,6 +770,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update the section title
             productSectionTitle.textContent = "Deals & Promotions";
             
+            // Hide recently viewed section when on deals
+            recentlyViewedSection.classList.add('d-none');
+            
             // Reset filters
             searchInput.value = '';
             document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
@@ -638,6 +790,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Update the section title
             productSectionTitle.textContent = "Featured Products";
+            
+            // Fetch and show recently viewed products
+            await fetchRecentlyViewed();
             
             // Reset filters
             searchInput.value = '';
@@ -664,7 +819,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create a separate function for fetching all products to be reused.
     const initializeProducts = async () => {
         try {
-            loadingSpinner.style.display = 'block';
+            renderSkeleton(); // NEW: Show skeleton before fetch
+            
             const response = await fetch('/api/products');
             if (!response.ok) throw new Error('Network response was not ok');
             allProducts = await response.json();
@@ -674,14 +830,14 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCategories(allProducts);
         } catch (error) {
             console.error('Failed to fetch initial data:', error);
+            skeletonGrid.classList.add('d-none');
+            productGrid.classList.remove('d-none');
             productGrid.innerHTML = '<p class="text-danger text-center">Could not load products. Please try again later.</p>';
             showToast('Could not load products. Please try again later.', 'danger');
-        } finally {
-            loadingSpinner.style.display = 'none';
-        }
+        } 
     };
     
-    // --- DARK MODE LOGIC ---
+    // --- DARK MODE LOGIC (No change) ---
     const setupDarkMode = () => {
         const currentMode = localStorage.getItem('theme');
         if (currentMode === 'dark') {
@@ -711,11 +867,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIAL FETCH & RENDER ---
     const initialize = async () => {
-        await initializeProducts();
-        await checkAuthAndGetUserId();
-        await loadWishlistStatus();
+        // 1. Setup Listeners
         setupEventListeners();
         setupDarkMode();
+
+        // 2. Load Products (Initial render)
+        await initializeProducts();
+        
+        // 3. Check Auth (Fetches user, loads cart, and triggers fetchRecentlyViewed if authenticated)
+        await checkAuthAndGetUserId();
+
+        // 4. Load Wishlist (Needs user/session info)
+        await loadWishlistStatus();
+        
+        // Ensure sticky bar is positioned correctly after init
+        updateCartDisplay();
     };
 
     initialize();
