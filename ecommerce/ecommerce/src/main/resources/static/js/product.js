@@ -21,7 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitReviewBtn = document.getElementById('submitReviewBtn');
     const reviewForm = document.getElementById('reviewForm');
     
-    let allProducts = [];
+    // NEW ELEMENTS FOR EXTERNAL SEARCH
+    const externalSearchBtn = document.getElementById('externalSearchBtn');
+    const externalSearchModalElement = document.getElementById('externalSearchModal');
+    const externalSearchModal = new bootstrap.Modal(externalSearchModalElement);
+    const searchLoading = document.getElementById('search-loading');
+    const searchResultsContent = document.getElementById('search-results-content');
+    const aiSummaryText = document.getElementById('ai-summary-text');
+    const sourceList = document.getElementById('source-list');
+    const noSources = document.getElementById('no-sources');
+
+    
+    let currentProduct = null;
     let wishlistItems = new Set();
 
     function showToast(message, type = 'success') {
@@ -115,17 +126,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const wishlistBtn = document.getElementById('wishlist-btn');
         if (!wishlistBtn) return;
         
-        const productId = parseInt(new URLSearchParams(window.location.search).get('id'));
-        const icon = wishlistBtn.querySelector('i');
-        
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = parseInt(urlParams.get('id'));
+
         if (wishlistItems.has(productId)) {
             wishlistBtn.classList.add('active');
-            icon.className = 'bi bi-heart-fill';
             wishlistBtn.title = 'Remove from wishlist';
+            wishlistBtn.innerHTML = '<i class="bi bi-heart-fill me-2"></i> Remove from Wishlist';
         } else {
             wishlistBtn.classList.remove('active');
-            icon.className = 'bi bi-heart';
             wishlistBtn.title = 'Add to wishlist';
+            wishlistBtn.innerHTML = '<i class="bi bi-heart me-2"></i> Add to Wishlist';
         }
     }
 
@@ -236,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/'; // Simple redirect to homepage where cart modal works
     });
     
-    // NEW: Function to check if the user can review and update the button
+    // Function to check if the user can review and update the button
     const checkCanUserReview = async (productId) => {
         const userId = sessionStorage.getItem('userId');
         const writeReviewBtn = document.getElementById('write-review-btn');
@@ -268,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // NEW: Function to handle review submission
+    // Function to handle review submission
     const submitReview = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
@@ -316,9 +327,129 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // NEW: Add event listener for review submission button
+    // Add event listener for review submission button
     submitReviewBtn.addEventListener('click', submitReview);
 
+    // --- NEW: External Search API Logic ---
+    const performExternalSearch = async (productName) => {
+        const userQuery = `Find recent external reviews and key features for the product: ${productName}`;
+        const systemPrompt = "You are a product analyst. Your task is to perform a Google Search based on the user's query and generate a concise, objective, two-paragraph summary of the key findings, including common consumer pros and cons if available. Cite all sources found below your summary.";
+        const apiKey = ""; // Canvas will automatically provide the key.
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        // Reset and show loading state
+        aiSummaryText.textContent = '';
+        sourceList.innerHTML = '';
+        noSources.style.display = 'none';
+        searchResultsContent.style.display = 'none';
+        searchLoading.style.display = 'block';
+        externalSearchModal.show();
+
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            tools: [{ "google_search": {} }],
+            systemInstruction: {
+                parts: [{ text: systemPrompt }]
+            },
+        };
+
+        const maxRetries = 3;
+        let delay = 1000;
+        let finalStatus = 0; // To store the last HTTP status code
+        let response = null;
+
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                finalStatus = response.status;
+
+                if (response.ok) break;
+                if (response.status === 429) { // Rate limit exceeded
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                } else {
+                    // For non-retryable errors (like 400, 403, 500), stop and throw immediately
+                    throw new Error(`API returned non-ok status: ${response.status}`);
+                }
+            } catch (error) {
+                console.error(`Attempt ${i + 1} failed:`, error);
+                if (i === maxRetries - 1 || finalStatus !== 429) {
+                    // Update error message to include the status code
+                    searchLoading.style.display = 'none';
+                    const message = finalStatus > 0 
+                        ? `Failed to fetch external insights (Error ${finalStatus}). Please check API configuration or network.`
+                        : 'Failed to fetch external insights. Please try again later due to a network error.';
+                    aiSummaryText.textContent = message;
+                    searchResultsContent.style.display = 'block';
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+        }
+
+        // Check if the loop finished without a successful response (only possible if response is null or not ok)
+        if (!response || !response.ok) {
+            searchLoading.style.display = 'none';
+            const message = finalStatus > 0 
+                ? `Failed to fetch external insights (Error ${finalStatus}). Please check API configuration or network.`
+                : 'Failed to fetch external insights. Please try again later due to a network error.';
+            aiSummaryText.textContent = message;
+            searchResultsContent.style.display = 'block';
+            return;
+        }
+
+
+        try {
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                const text = candidate.content.parts[0].text;
+                let sources = [];
+                const groundingMetadata = candidate.groundingMetadata;
+
+                if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                    sources = groundingMetadata.groundingAttributions
+                        .map(attribution => ({
+                            uri: attribution.web?.uri,
+                            title: attribution.web?.title,
+                        }))
+                        .filter(source => source.uri && source.title);
+                }
+
+                // Display results
+                aiSummaryText.innerHTML = text.replace(/\n/g, '<br>');
+                
+                if (sources.length > 0) {
+                    sourceList.innerHTML = sources.map((source, index) => `
+                        <li class="list-group-item d-flex justify-content-between align-items-start px-0">
+                            <a href="${source.uri}" target="_blank" class="text-decoration-none">${source.title}</a>
+                        </li>
+                    `).join('');
+                    noSources.style.display = 'none';
+                } else {
+                    sourceList.innerHTML = '';
+                    noSources.style.display = 'block';
+                }
+
+            } else {
+                 aiSummaryText.textContent = 'No relevant external information could be generated for this product.';
+            }
+        } catch (error) {
+            aiSummaryText.textContent = 'An error occurred while processing external insights.';
+            console.error('Error processing Gemini response:', error);
+        } finally {
+            searchLoading.style.display = 'none';
+            searchResultsContent.style.display = 'block';
+        }
+    };
+    // --- END: External Search API Logic ---
 
     const fetchProductDetails = async () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -337,10 +468,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Product not found');
             }
             const product = await response.json();
-            allProducts = [product];
+            currentProduct = product; // Store the product globally
             renderProductDetails(product);
             await fetchAndRenderReviews(productId);
-            await checkCanUserReview(productId); // <-- ADDED: Check review status
+            await checkCanUserReview(productId);
         } catch (error) {
             console.error('Error fetching product details:', error);
             errorMessage.style.display = 'block';
@@ -373,11 +504,21 @@ document.addEventListener('DOMContentLoaded', () => {
             await addToCart(product, 1);
         });
 
+        // Ensure wishlist button state is updated correctly
         const wishlistBtn = document.getElementById('wishlist-btn');
         wishlistBtn.replaceWith(wishlistBtn.cloneNode(true));
         document.getElementById('wishlist-btn').addEventListener('click', async () => {
             const productId = parseInt(new URLSearchParams(window.location.search).get('id'));
             await toggleWishlist(productId);
+        });
+        
+        // Add event listener for the NEW external search button
+        externalSearchBtn.addEventListener('click', () => {
+            if (currentProduct && currentProduct.name) {
+                performExternalSearch(currentProduct.name);
+            } else {
+                 showToast('Product name is unavailable for search.', 'warning');
+            }
         });
     };
     

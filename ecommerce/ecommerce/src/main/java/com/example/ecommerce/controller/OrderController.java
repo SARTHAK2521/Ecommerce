@@ -2,11 +2,11 @@ package com.example.ecommerce.controller;
 
 import com.example.ecommerce.model.Order;
 import com.example.ecommerce.service.OrderService;
+import com.example.ecommerce.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +18,10 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+    
+    // NEW: Inject UserService to look up the numeric ID from the username
+    @Autowired
+    private UserService userService;
 
     static class OrderRequest {
         private Long userId;
@@ -43,10 +47,16 @@ public class OrderController {
         }
         
         try {
-            Long userId = Long.parseLong(authentication.getName());
+            // FIX: Use the username (authentication.getName()) to find the actual User ID
+            String username = authentication.getName();
+            Long userId = userService.findByUsername(username)
+                                     .map(user -> user.getId())
+                                     .orElseThrow(() -> new RuntimeException("Authenticated user not found in database"));
+            
             List<Order> orders = orderService.findOrdersByUserId(userId);
             return ResponseEntity.ok(orders);
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
+            // Catches RuntimeException, NumberFormatException, etc.
             return ResponseEntity.status(401).build();
         }
     }

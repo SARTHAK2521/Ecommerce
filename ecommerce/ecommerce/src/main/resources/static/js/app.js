@@ -62,22 +62,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const data = await response.json();
-                wishlistItems.clear();
+                // We use a Set here, so clear is not appropriate. We toggle.
                 if (data.isInWishlist) {
                     wishlistItems.add(productId);
                     showToast('Added to wishlist!', 'success');
                 } else {
+                    wishlistItems.delete(productId);
                     showToast('Removed from wishlist', 'info');
                 }
                 updateWishlistButtons();
             } else if (response.status === 401) {
                 showToast('Please log in to use wishlist', 'warning');
             } else {
-                showToast('Error updating wishlist', 'error');
+                showToast('Error updating wishlist', 'danger');
             }
         } catch (error) {
             console.error('Error toggling wishlist:', error);
-            showToast('Error updating wishlist', 'error');
+            showToast('Error updating wishlist', 'danger');
         }
     }
 
@@ -104,11 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (wishlistItems.has(productId)) {
                 btn.classList.add('active');
-                icon.className = 'bi bi-heart-fill';
+                icon.className = icon.className.includes('fs-6') ? 'bi bi-heart-fill fs-6' : 'bi bi-heart-fill'; // Preserve fs-6 if it exists
                 btn.title = 'Remove from wishlist';
             } else {
                 btn.classList.remove('active');
-                icon.className = 'bi bi-heart';
+                icon.className = icon.className.includes('fs-6') ? 'bi bi-heart fs-6' : 'bi bi-heart'; // Preserve fs-6 if it exists
                 btn.title = 'Add to wishlist';
             }
         });
@@ -257,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- RENDER PRODUCTS ---
+    // --- RENDER PRODUCTS (UPDATED HTML STRUCTURE FOR PROFESSIONAL LOOK) ---
     const renderProducts = (productsToRender) => {
         if (loadingSpinner) loadingSpinner.style.display = 'none';
         productGrid.innerHTML = '';
@@ -292,10 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
             productCard.innerHTML = `
                 <div class="card h-100 product-card shadow border-0 position-relative">
                     ${product.onSale ? `<span class="discount-badge">-${discountPercent}%</span>` : ''}
-                    <div class="product-img-container bg-white p-3 d-flex align-items-center justify-content-center" style="min-height:180px;">
+                    <div class="product-img-container bg-white p-3 d-flex align-items-center justify-content-center position-relative" style="min-height:180px;">
                         <a href="/product.html?id=${product.id}" tabindex="0">
                             <img src="${product.imageUrl}" class="card-img-top" alt="${product.name}" aria-label="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=No+Image';" style="max-height:140px;object-fit:contain;">
                         </a>
+                        <!-- NEW: Wishlist button as an overlay, outside the body for a cleaner look -->
+                        <button class="btn btn-outline-danger btn-sm btn-wishlist position-absolute top-0 end-0 m-2 rounded-circle" data-product-id="${product.id}" title="Add to wishlist" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 10;">
+                            <i class="bi bi-heart fs-6"></i>
+                        </button>
                     </div>
                     <div class="card-body product-card-body d-flex flex-column">
                         <p class="category mb-1 text-uppercase text-primary small fw-semibold">${product.category || 'Uncategorized'}</p>
@@ -317,20 +322,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>` :
                                 `<button class="btn btn-primary btn-add-to-cart w-100 fw-semibold" aria-label="Add ${product.name} to cart" ${isOutOfStock ? 'disabled' : ''}><i class="bi bi-cart-plus me-1"></i>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>`
                             }
-                            <div class="d-flex gap-2 mt-2">
-                                <button class="btn btn-outline-danger btn-wishlist flex-grow-1" data-product-id="${product.id}" title="Add to wishlist">
-                                    <i class="bi bi-heart"></i>
-                                </button>
-                                <a href="/product.html?id=${product.id}" class="btn btn-outline-primary flex-grow-1" title="View details">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
+                            <!-- Replaced the old btn-group with a standalone View Details button for better focus -->
+                            <a href="/product.html?id=${product.id}" class="btn btn-outline-secondary btn-view-details w-100 mt-2" title="View details">
+                                <i class="bi bi-eye me-1"></i>View Details
+                            </a>
                         </div>
                     </div>
                 </div>
             `;
             productGrid.appendChild(productCard);
         });
+        updateWishlistButtons(); // Ensure button states are updated after rendering
     };
 
     // --- RENDER CATEGORIES ---
@@ -493,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         productGrid.addEventListener('click', async e => {
-            // Handle wishlist buttons
+            // Handle wishlist buttons (new location/structure)
             if (e.target.closest('.btn-wishlist')) {
                 const wishlistBtn = e.target.closest('.btn-wishlist');
                 const productId = parseInt(wishlistBtn.dataset.productId, 10);

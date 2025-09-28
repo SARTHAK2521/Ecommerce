@@ -1,9 +1,9 @@
-/* --- GLOBAL STYLES & TYPOGRAPHY --- */
+ /* --- GLOBAL STYLES & TYPOGRAPHY --- */
 :root {
-    --theme-primary: #00796B; /* Softer primary green */
+    --theme-primary: #00796B; /* Softer primary green (Teal) */
     --theme-primary-hover: #004D40;
     --theme-accent: #ff9800; /* Vibrant accent orange */
-    --theme-secondary: #FF5722; /* New accent color for highlights */
+    --theme-secondary: #FF5722; /* New accent color for highlights (Orange-Red) */
     --text-dark: #222b2e;
     --text-muted: #7b8a8b;
     --bg-light: #f5f7fa;
@@ -15,6 +15,8 @@
     --text-color: var(--text-dark);
     /* NEW SHADOW VARIABLE */
     --shadow-hover: 0 16px 40px rgba(0,0,0,0.1); 
+    /* NEW: Smooth transition variable for professional feel */
+    --transition-smooth: all 0.3s ease-in-out; 
 }
 
 body {
@@ -23,24 +25,32 @@ body {
     color: var(--text-color);
     min-height: 100vh;
     letter-spacing: 0.01em;
-    transition: background-color 0.3s, color 0.3s;
+    /* UPDATED: Smoother transition and better line-height */
+    transition: var(--transition-smooth);
+    line-height: 1.6;
 }
 
-/* Dark Mode Styles - SOOTHING MODERN COLORS */
+/* ------------------------------------------- */
+/* --- UPDATED DARK MODE STYLES (Professional) --- */
+/* ------------------------------------------- */
 body.dark-mode {
-    --theme-primary: #64B5F6; /* Soft blue primary */
-    --theme-primary-hover: #42A5F5;
-    --theme-accent: #FFB74D; /* Warm amber accent */
-    --theme-secondary: #F48FB1; /* Soft pink secondary */
-    --text-dark: #E8EAF6; /* Very light text */
-    --text-muted: #B0BEC5;
-    --bg-light: #2D3748; /* Warm dark gray */
-    --border-color: #4A5568;
-    --shadow: 0 4px 24px rgba(0,0,0,0.3);
-    --shadow-hover: 0 16px 40px rgba(0,0,0,0.5); /* Dark mode hover shadow */
-    --bg-main: #1A202C; /* Deep dark background */
-    --bg-card: #2D3748; /* Card background */
-    --text-color: #E8EAF6;
+    /* Base Colors - Deep Charcoal Theme */
+    --theme-primary: #4DD0E1; /* Cyan/Teal to complement original green, better visibility */
+    --theme-primary-hover: #26C6DA;
+    --theme-accent: #FFB74D; /* Warm amber accent for contrast */
+    --theme-secondary: #FF8A65; /* Salmon accent for sales/status */
+    
+    --text-dark: #E0E0E0; /* Off-white text for less eye strain (General Text Color) */
+    --text-muted: #9E9E9E; /* Muted gray for secondary text */
+    
+    --bg-main: #121212; /* Very deep charcoal background (Main Body) */
+    --bg-light: #1E1E1E; /* Slightly lighter background for sections/divs (Nav, Hero) */
+    --bg-card: #282828; /* Card background (Product Cards, Modals) */
+    
+    --border-color: #424242; /* Dark, subtle borders */
+    --shadow: 0 4px 24px rgba(0,0,0,0.5);
+    --shadow-hover: 0 16px 40px rgba(0,0,0,0.7);
+    --text-color: var(--text-dark); /* Sets default text color */
 }
 
 /* --- NAVIGATION BAR --- */
@@ -50,9 +60,10 @@ body.dark-mode {
     background: var(--bg-card);
 }
 body.dark-mode .navbar {
-    background: #1A202C;
+    /* FIX: Added !important to override Bootstrap's .bg-white class */
+    background: var(--bg-light) !important; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    border-bottom: 1px solid #4A5568;
+    border-bottom: 1px solid var(--border-color);
 }
 .navbar-brand {
     letter-spacing: -1px;
@@ -60,6 +71,11 @@ body.dark-mode .navbar {
     display: flex;
     align-items: center;
 }
+body.dark-mode .navbar-brand {
+     /* Ensure brand name uses theme primary color for visibility */
+    color: var(--theme-primary) !important;
+}
+
 .navbar .nav-link {
     font-weight: 500;
     color: var(--text-color) !important;
@@ -68,7 +84,12 @@ body.dark-mode .navbar {
 }
 
 body.dark-mode .navbar .nav-link {
-    color: #E8EAF6 !important;
+    /* FIX: Ensure Nav Link text color is the bright text color */
+    color: var(--text-dark) !important; 
+}
+body.dark-mode .nav-item .nav-link {
+    /* Ensure icon links (like person/cart) have correct color */
+    color: var(--text-dark) !important;
 }
 
 .navbar .nav-link:hover, .navbar .nav-link.active {
@@ -76,7 +97,7 @@ body.dark-mode .navbar .nav-link {
 }
 
 body.dark-mode .navbar .nav-link:hover, body.dark-mode .navbar .nav-link.active {
-    color: #64B5F6 !important;
+    color: var(--theme-primary) !important;
 }
 .navbar .form-control {
     border-radius: 20px 0 0 20px;
@@ -88,16 +109,17 @@ body.dark-mode .navbar .nav-link:hover, body.dark-mode .navbar .nav-link.active 
 }
 
 body.dark-mode .navbar .form-control {
-    background-color: #2D3748;
-    color: #E8EAF6;
-    border-color: #4A5568;
+    /* FIX: Use slightly lighter background for input fields for better visibility */
+    background-color: var(--bg-card); 
+    color: var(--text-dark);
+    border-color: var(--border-color);
 }
 
 body.dark-mode .navbar .form-control:focus {
-    background-color: #2D3748;
-    color: #E8EAF6;
-    border-color: #64B5F6;
-    box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.25);
+    background-color: var(--bg-card);
+    color: var(--text-dark);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 0.2rem rgba(77, 208, 225, 0.25); /* Adjusted to new primary color */
 }
 
 .navbar .input-group .btn {
@@ -106,20 +128,21 @@ body.dark-mode .navbar .form-control:focus {
 }
 
 body.dark-mode .navbar .input-group .btn {
-    background-color: #64B5F6;
-    border-color: #64B5F6;
-    color: #1A202C;
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    /* FIX: Use the main background color for text for maximum contrast on primary button */
+    color: var(--bg-main); 
 }
 
 body.dark-mode .navbar .input-group .btn:hover {
-    background-color: #42A5F5;
-    border-color: #42A5F5;
+    background-color: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
 }
 #cart-counter {
     font-size: 12px;
     font-weight: 600;
     background-color: var(--theme-accent) !important;
-    color: #fff !important;
+    color: var(--bg-main) !important; /* Dark text on accent color */
     min-width: 22px;
     min-height: 22px;
     display: inline-flex;
@@ -131,8 +154,8 @@ body.dark-mode .navbar .input-group .btn:hover {
 }
 
 body.dark-mode #cart-counter {
-    background-color: #FFB74D !important;
-    color: #1A202C !important;
+    background-color: var(--theme-accent) !important;
+    color: var(--bg-main) !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
@@ -145,7 +168,8 @@ body.dark-mode #cart-counter {
 }
 
 body.dark-mode .nav-btn {
-    color: #E8EAF6;
+    /* FIX: Ensure toggle button icons are visible */
+    color: var(--text-dark);
 }
 
 .nav-btn:hover {
@@ -154,8 +178,27 @@ body.dark-mode .nav-btn {
 }
 
 body.dark-mode .nav-btn:hover {
-    color: #64B5F6;
+    color: var(--theme-primary);
 }
+
+/* NEW: Dropdown menu styling for Dark Mode */
+body.dark-mode .dropdown-menu {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border-color);
+}
+body.dark-mode .dropdown-item {
+    color: var(--text-dark) !important;
+    background-color: transparent !important;
+}
+body.dark-mode .dropdown-item:hover,
+body.dark-mode .dropdown-item:focus {
+    background-color: var(--bg-light) !important;
+    color: var(--theme-primary) !important;
+}
+body.dark-mode .dropdown-divider {
+    border-top-color: var(--border-color);
+}
+
 
 /* --- HERO SECTION --- */
 .hero-section {
@@ -164,7 +207,8 @@ body.dark-mode .nav-btn:hover {
     padding: 7rem 0 5rem 0;
 }
 body.dark-mode .hero-section {
-    background: linear-gradient(135deg, #2D3748 0%, #1A202C 100%);
+    /* Dark mode background subtle gradient */
+    background: linear-gradient(135deg, #1E1E1E 0%, #121212 100%);
 }
 .hero-section .btn-primary {
     background-color: var(--theme-primary);
@@ -177,10 +221,14 @@ body.dark-mode .hero-section {
 }
 .hero-section .display-3 {
     color: var(--text-color);
-    letter-spacing: -1px;
+    /* UPDATED: Tighter spacing and bolder weight */
+    font-weight: 800; 
+    letter-spacing: -2px;
 }
 .hero-section .lead {
-    color: var(--text-muted);
+    /* FIX: Explicitly set text color to ensure visibility against dark background */
+    /* Added !important to override Bootstrap's .text-muted class */
+    color: var(--text-dark) !important; 
     font-size: 1.25rem;
 }
 
@@ -204,8 +252,9 @@ body.dark-mode .hero-section {
     left: 50%;
     transform: translateX(-50%);
     width: 50px;
-    height: 3px;
-    background-color: var(--theme-accent);
+    /* UPDATED: Thinner and primary-hover color */
+    height: 2px;
+    background-color: var(--theme-primary-hover);
     border-radius: 2px;
 }
 body.dark-mode .section-title {
@@ -265,12 +314,13 @@ body.dark-mode .section-title {
 }
 
 body.dark-mode .category-card:hover, body.dark-mode .category-card.active {
-    background: #4A5568;
-    box-shadow: 0 16px 40px rgba(100, 181, 246, 0.25);
-    border-color: #64B5F6;
+    background: #424242; /* A bit lighter gray for active state */
+    /* NEW: Use primary dark mode color for active shadow */
+    box-shadow: 0 16px 40px rgba(77, 208, 225, 0.25);
+    border-color: var(--theme-primary);
 }
 body.dark-mode .category-card {
-    background: #2D3748;
+    background: var(--bg-card);
 }
 .category-card i {
     font-size: 2.5rem;
@@ -279,7 +329,6 @@ body.dark-mode .category-card {
     display: block;
 }
 .category-card h5 {
-    margin-top: 1rem;
     font-weight: 600;
     color: var(--text-color);
     font-size: 1.1rem;
@@ -288,21 +337,8 @@ body.dark-mode .category-card {
 
 /* Hide carousel arrows on mobile */
 @media (max-width: 767.98px) {
-    #categoryCarouselWrapper .carousel-control-prev,
-    #categoryCarouselWrapper .carousel-control-next {
-        display: none !important;
-    }
-    #category-filters {
-        min-height: 170px;
-    }
-    .category-card {
-        padding: 1rem 0.5rem;
-    }
     .product-card-body {
         padding: 0.75rem;
-    }
-    footer {
-        font-size: 0.95rem;
     }
 }
 
@@ -315,18 +351,19 @@ body.dark-mode .category-card {
     display: flex;
     flex-direction: column;
     /* Improved aesthetic: smoother, stronger lift */
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+    transition: var(--transition-smooth);
     box-shadow: 0 8px 16px rgba(0,0,0,0.05);
 }
 .product-card:hover {
-    transform: translateY(-8px) scale(1.02);
+    /* UPDATED: Smoother, subtle scale lift */
+    transform: translateY(-8px) scale(1.01);
     box-shadow: var(--shadow-hover);
     border-color: var(--theme-primary);
 }
 
 body.dark-mode .product-card:hover {
     box-shadow: var(--shadow-hover);
-    border-color: #64B5F6;
+    border-color: var(--theme-primary);
 }
 .product-img-container {
     height: 200px;
@@ -337,13 +374,13 @@ body.dark-mode .product-card:hover {
     background: var(--bg-light);
 }
 body.dark-mode .product-img-container {
-    background: #4A5568;
+    background: var(--bg-light);
 }
 .product-img-container img {
     max-height: 100%;
     max-width: 100%;
     object-fit: contain;
-    transition: transform 0.3s;
+    transition: var(--transition-smooth);
 }
 .product-card:hover img {
     transform: scale(1.05);
@@ -362,18 +399,26 @@ body.dark-mode .product-img-container {
     margin-bottom: 0.25rem;
 }
 .product-card .product-title {
-    font-size: 1.08rem;
+    /* UPDATED: Slightly larger font size */
+    font-size: 1.15rem;
     font-weight: 600;
     margin: 0.25rem 0;
     flex-grow: 1;
     letter-spacing: 0.01em;
     color: var(--text-color);
 }
+body.dark-mode .product-card .product-title a {
+    /* FIX: Explicitly set product title link color for visibility on card background */
+    color: var(--text-dark) !important; 
+}
 .product-card .price {
     /* Bolder, more prominent price */
     font-size: 1.35rem;
     font-weight: 800;
-    margin-bottom: 0.5rem;
+    color: var(--theme-secondary);
+}
+body.dark-mode .product-card .price {
+    /* Set price text color explicitly for visibility */
     color: var(--theme-secondary);
 }
 .product-card .btn-add-to-cart, .product-card .btn-view-details {
@@ -385,7 +430,15 @@ body.dark-mode .product-img-container {
     border-radius: 6px;
     transition: background 0.2s, border 0.2s, transform 0.1s;
 }
+body.dark-mode .product-card .btn-add-to-cart, body.dark-mode .product-card .btn-view-details {
+    color: var(--bg-main); /* Dark background text for contrast */
+}
+/* NEW: Better primary button hover state */
 .product-card .btn-add-to-cart:hover, .product-card .btn-view-details:hover {
+    background-color: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+}
+body.dark-mode .product-card .btn-add-to-cart:hover, body.dark-mode .product-card .btn-view-details:hover {
     background-color: var(--theme-primary-hover);
     border-color: var(--theme-primary-hover);
 }
@@ -420,6 +473,7 @@ body.dark-mode .product-img-container {
     font-size: 0.8rem;
     padding: 0.25em 0.75em;
     border-radius: 50px;
+    z-index: 5;
 }
 
 .price-flex {
@@ -455,9 +509,6 @@ body.dark-mode .product-img-container {
     gap: 8px;
     justify-content: center;
     width: 100%;
-    border-radius: 50px;
-    overflow: hidden;
-    margin-top: 5px;
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     box-shadow: 0 1px 4px rgba(0,0,0,0.03);
@@ -483,23 +534,23 @@ body.dark-mode .product-img-container {
 }
 
 body.dark-mode .quantity-controls {
-    background-color: #4A5568;
-    border-color: #4A5568;
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
 }
 
 body.dark-mode .quantity-btn {
-    background: #2D3748;
-    color: #64B5F6;
+    background: var(--bg-card);
+    color: var(--theme-primary);
 }
 
 body.dark-mode .quantity-btn:hover, body.dark-mode .quantity-btn:focus {
-    background: #64B5F6;
-    color: #1A202C;
+    background: var(--theme-primary);
+    color: var(--bg-main);
 }
 
 body.dark-mode .quantity-display {
-    color: #E8EAF6;
-    border-color: #4A5568;
+    color: var(--text-dark);
+    border-color: var(--border-color);
 }
 .quantity-btn:active {
     transform: scale(0.95);
@@ -533,8 +584,8 @@ body.dark-mode .quantity-display {
     border: 1.5px solid var(--theme-accent);
 }
 body.dark-mode #no-results {
-    background: #4A5568;
-    color: #FFB74D;
+    background: var(--bg-light);
+    color: var(--theme-accent);
 }
 
 /* --- FOOTER --- */
@@ -547,8 +598,9 @@ footer {
     box-shadow: 0 -2px 12px rgba(0,0,0,0.04);
 }
 body.dark-mode footer {
-    background: linear-gradient(135deg, #2D3748 0%, #1A202C 100%);
-    border-top: 2px solid #64B5F6;
+    /* Use the deeper main background for the footer */
+    background: linear-gradient(135deg, #1E1E1E 0%, #121212 100%);
+    border-top: 2px solid var(--theme-primary);
     box-shadow: 0 -2px 12px rgba(0,0,0,0.2);
 }
 footer h6 {
@@ -556,9 +608,16 @@ footer h6 {
     font-weight: 700;
     letter-spacing: 0.5px;
 }
+body.dark-mode footer h6 {
+    color: var(--theme-primary);
+}
 footer a.text-muted {
     color: var(--text-muted) !important;
     transition: color 0.2s;
+}
+body.dark-mode footer a.text-muted {
+    /* FIX: Ensure footer links are highly visible */
+    color: var(--text-dark) !important;
 }
 footer a.text-muted:hover {
     color: var(--theme-accent) !important;
@@ -567,6 +626,9 @@ footer a.text-muted:hover {
 footer hr {
     background: var(--theme-accent);
     opacity: 0.7;
+}
+body.dark-mode footer hr {
+    background-color: var(--theme-accent) !important;
 }
 
 /* --- CHECKOUT MODAL STYLES --- */
@@ -597,6 +659,9 @@ footer hr {
     background-color: transparent;
     color: var(--text-color);
 }
+body.dark-mode .checkout-section .list-group-item {
+     color: var(--text-dark);
+}
 .checkout-section .list-group-item:last-child {
     border-bottom: none;
 }
@@ -619,18 +684,18 @@ footer hr {
 }
 
 body.dark-mode .shipping-option {
-    background-color: #4A5568;
-    border-color: #4A5568;
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
 }
 
 body.dark-mode .shipping-option:hover {
-    background-color: #2D3748;
-    border-color: #64B5F6;
+    background-color: var(--bg-card);
+    border-color: var(--theme-primary);
 }
 
 body.dark-mode .shipping-option.active {
-    border-color: #64B5F6;
-    background-color: #2D3748;
+    border-color: var(--theme-primary);
+    background-color: var(--bg-card);
 }
 .shipping-option .form-check-label {
     width: 100%;
@@ -664,9 +729,6 @@ body.dark-mode .shipping-option.active {
     max-width: 100%;
     max-height: 400px;
     object-fit: contain;
-}
-.product-details {
-    padding: 2rem;
 }
 .product-details .price {
     font-size: 2.5rem;
@@ -730,24 +792,27 @@ body.dark-mode .shipping-option.active {
 }
 
 body.dark-mode #toast-container .toast {
-    background-color: #64B5F6 !important;
+    background-color: var(--theme-primary) !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode #toast-container .toast.bg-danger {
-    background-color: #F48FB1 !important;
+    background-color: var(--theme-secondary) !important;
 }
 
 body.dark-mode #toast-container .toast.bg-warning {
-    background-color: #FFB74D !important;
-    color: #1A202C !important;
+    background-color: var(--theme-accent) !important;
+    color: var(--bg-main) !important;
 }
 
-/* --- WISHLIST STYLES --- */
+/* --- WISHLIST STYLES (Update for new icon placement on product grid) --- */
 .btn-wishlist {
-    transition: all 0.2s ease;
-    border-color: #dc3545;
+    transition: var(--transition-smooth);
+    /* Make the button transparent/subtle when inactive */
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: #dee2e6;
     color: #dc3545;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .btn-wishlist:hover {
@@ -761,33 +826,31 @@ body.dark-mode #toast-container .toast.bg-warning {
     background-color: #dc3545;
     border-color: #dc3545;
     color: white;
-}
-
-.btn-wishlist.active:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
 
 body.dark-mode .btn-wishlist {
-    border-color: #F48FB1;
-    color: #F48FB1;
+    background-color: rgba(40, 40, 40, 0.9);
+    border-color: #424242;
+    color: var(--theme-secondary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 body.dark-mode .btn-wishlist:hover {
-    background-color: #F48FB1;
-    border-color: #F48FB1;
-    color: #1A202C;
+    background-color: var(--theme-secondary);
+    border-color: var(--theme-secondary);
+    color: var(--bg-main);
 }
 
 body.dark-mode .btn-wishlist.active {
-    background-color: #F48FB1;
-    border-color: #F48FB1;
-    color: #1A202C;
+    background-color: var(--theme-secondary);
+    border-color: var(--theme-secondary);
+    color: var(--bg-main);
 }
 
 body.dark-mode .btn-wishlist.active:hover {
-    background-color: #F06292;
-    border-color: #EC407A;
+    background-color: #D35400;
+    border-color: #C0392B;
 }
 
 /* --- RESPONSIVE --- */

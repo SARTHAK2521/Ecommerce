@@ -2,6 +2,7 @@ package com.example.ecommerce.controller;
 
 import com.example.ecommerce.model.ProductReview;
 import com.example.ecommerce.service.ProductReviewService;
+import com.example.ecommerce.service.UserService; // NEW: Import UserService
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,6 +19,10 @@ public class ProductReviewController {
     
     @Autowired
     private ProductReviewService reviewService;
+
+    // NEW: Inject UserService to look up the numeric ID from the username
+    @Autowired
+    private UserService userService;
     
     /**
      * Get all reviews for a product
@@ -230,20 +235,14 @@ public class ProductReviewController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated() && 
             !authentication.getName().equals("anonymousUser")) {
-            try {
-                return Long.parseLong(authentication.getName());
-            } catch (NumberFormatException e) {
-                return null;
-            }
+            
+            String username = authentication.getName();
+
+            // FIX: Look up the User ID by username (the authenticated principal name)
+            return userService.findByUsername(username)
+                    .map(user -> user.getId())
+                    .orElse(null);
         }
         return null;
     }
 }
-
-
-
-
-
-
-
-
