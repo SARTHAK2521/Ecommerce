@@ -52,7 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function checkAuthenticationAndSetUserId() {
+    // MODIFIED: Centralized authentication check and session maintenance
+    async function checkAuthenticationAndSetUserId(redirectOnFail = false) {
         try {
             const response = await fetch('/api/users/me');
             if (response.ok) {
@@ -63,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 authLink.classList.add('d-none');
                 ordersLinkLi.classList.remove('d-none');
                 logoutLinkLi.classList.remove('d-none');
+                return true; // Authenticated
             } else {
                 sessionStorage.removeItem('userId');
                 sessionStorage.removeItem('username');
@@ -70,6 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 authLink.classList.remove('d-none');
                 ordersLinkLi.classList.add('d-none');
                 logoutLinkLi.classList.add('d-none');
+
+                if (redirectOnFail) {
+                    showToast('Your session has expired. Please log in.', 'warning');
+                    setTimeout(() => window.location.href = '/login.html', 2000);
+                }
+                return false; // Not Authenticated
             }
         } catch (error) {
             console.error('Error checking auth:', error);
@@ -79,20 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
             authLink.classList.remove('d-none');
             ordersLinkLi.classList.add('d-none');
             logoutLinkLi.classList.add('d-none');
-        } finally {
-            await updateCartCounter();
-        }
-    }
-    
-    function checkAuthAndGetUserId() {
-        const userId = sessionStorage.getItem('userId');
-        if (userId) {
-            authLink.classList.add('d-none');
-            ordersLinkLi.classList.remove('d-none');
-            logoutLinkLi.classList.remove('d-none');
-        } else {
-            checkAuthenticationAndSetUserId();
-        }
+            
+            if (redirectOnFail) {
+                showToast('A network error occurred. Please log in.', 'danger');
+                setTimeout(() => window.location.href = '/login.html', 2000);
+            }
+            return false;
+        } 
     }
 
     logoutBtn.addEventListener('click', async () => {
@@ -112,17 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cartLink.addEventListener('click', (e) => {
         e.preventDefault();
-        showToast('Please visit the home page to view your cart and checkout.', 'info');
-        setTimeout(() => window.location.href = '/', 2000);
+        window.location.href = '/';
     });
 
+    // MODIFIED: fetchWishlist removes the client-side check, relying on initializePage handled auth.
     async function fetchWishlist() {
-        const userId = sessionStorage.getItem('userId');
-        if (!userId) {
-            showEmptyWishlist();
-            return;
-        }
-
         loadingSpinner.style.display = 'block';
         try {
             const response = await fetch('/api/wishlist');
@@ -130,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 wishlistItems = await response.json();
                 renderWishlist();
             } else if (response.status === 401) {
-                showToast('Please log in to view your wishlist', 'warning');
+                 // Failsafe: if somehow unauthorized after auth check, redirect.
+                showToast('Authentication failed. Redirecting to login.', 'warning');
                 setTimeout(() => window.location.href = '/login.html', 2000);
             } else {
                 showToast('Failed to load wishlist', 'danger');
@@ -203,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         wishlistGrid.innerHTML = '';
         emptyWishlist.style.display = 'block';
         wishlistCount.textContent = '0 items';
+        loadingSpinner.style.display = 'none';
     }
 
     function setupWishlistEventListeners() {
@@ -282,7 +279,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // NEW: Initialization sequence to ensure authentication runs first
+    const initializePage = async () => {
+        await updateCartCounter();
+        const isAuthenticated = await checkAuthenticationAndSetUserId(true);
+        
+        if (isAuthenticated) {
+            await fetchWishlist();
+        } else {
+             showEmptyWishlist();
+        }
+    }
+
     // Initialize the page
-    checkAuthAndGetUserId();
-    fetchWishlist();
+    initializePage();
 });

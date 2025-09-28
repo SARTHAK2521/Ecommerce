@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     const cartLink = document.getElementById('cart-link');
     
+    // NEW ELEMENTS FOR REVIEW SUBMISSION
+    const reviewModalElement = document.getElementById('reviewModal');
+    const reviewModal = new bootstrap.Modal(reviewModalElement);
+    const submitReviewBtn = document.getElementById('submitReviewBtn');
+    const reviewForm = document.getElementById('reviewForm');
+    
     let allProducts = [];
     let wishlistItems = new Set();
 
@@ -132,6 +138,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Client-side stock check for a better user experience
+        const currentCartItem = await fetch(`/api/cart/${userId}`)
+            .then(res => res.json())
+            .then(cartData => cartData.cartItems.find(item => item.product.id === product.id))
+            .catch(() => ({ quantity: 0 }));
+
+        const currentQuantityInCart = currentCartItem ? currentCartItem.quantity : 0;
+        const potentialNewQuantity = currentQuantityInCart + quantity;
+        
+        if (potentialNewQuantity > product.stockQuantity) {
+            showToast(`Cannot add product: insufficient stock available. Only ${product.stockQuantity} units remaining.`, 'danger');
+            return;
+        }
+
         try {
             const response = await fetch(`/api/cart/${userId}/items`, {
                 method: 'POST',
@@ -213,9 +233,92 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cartLink.addEventListener('click', (e) => {
         e.preventDefault();
-        showToast('Please visit the home page to view your cart and checkout.', 'info');
-        setTimeout(() => window.location.href = '/', 2000);
+        window.location.href = '/'; // Simple redirect to homepage where cart modal works
     });
+    
+    // NEW: Function to check if the user can review and update the button
+    const checkCanUserReview = async (productId) => {
+        const userId = sessionStorage.getItem('userId');
+        const writeReviewBtn = document.getElementById('write-review-btn');
+        if (!userId) {
+             writeReviewBtn.disabled = true;
+             writeReviewBtn.textContent = 'Login to Review';
+             writeReviewBtn.setAttribute('title', 'You must be logged in to write a review.');
+             return;
+        }
+
+        try {
+            // Call the backend endpoint to check review status
+            const response = await fetch(`/api/reviews/product/${productId}/can-review`);
+            const data = await response.json();
+            
+            if (data.canReview) {
+                writeReviewBtn.disabled = false;
+                writeReviewBtn.textContent = 'Write a Review';
+                writeReviewBtn.removeAttribute('title');
+            } else {
+                writeReviewBtn.disabled = true;
+                writeReviewBtn.textContent = 'Already Reviewed';
+                writeReviewBtn.setAttribute('title', 'You have already submitted a review for this product.');
+            }
+        } catch (error) {
+            console.error('Error checking review status:', error);
+            writeReviewBtn.disabled = true;
+            writeReviewBtn.textContent = 'Error Loading Status';
+        }
+    };
+    
+    // NEW: Function to handle review submission
+    const submitReview = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+        const userId = sessionStorage.getItem('userId');
+        
+        if (!userId) {
+            showToast('You must be logged in to submit a review.', 'danger');
+            reviewModal.hide();
+            return;
+        }
+
+        const ratingInput = reviewForm.querySelector('input[name="rating"]:checked');
+        const comment = document.getElementById('reviewComment').value.trim();
+
+        if (!ratingInput) {
+            showToast('Please select a rating.', 'warning');
+            return;
+        }
+
+        const rating = parseInt(ratingInput.value, 10);
+        
+        try {
+            // Call the backend API to add the review
+            const response = await fetch(`/api/reviews/product/${productId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rating, comment })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast(data.message || 'Review added successfully!');
+                reviewModal.hide();
+                reviewForm.reset();
+                // Refresh the reviews list and update the button state
+                await fetchAndRenderReviews(productId);
+                await checkCanUserReview(productId);
+            } else {
+                showToast(data.message || 'Failed to submit review. If you have already reviewed, you cannot submit another.', 'danger');
+            }
+        } catch (error) {
+            console.error('Error submitting review:', error);
+            showToast('An error occurred while submitting your review.', 'danger');
+        }
+    };
+    
+    // NEW: Add event listener for review submission button
+    submitReviewBtn.addEventListener('click', submitReview);
+
 
     const fetchProductDetails = async () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -236,7 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = await response.json();
             allProducts = [product];
             renderProductDetails(product);
-            await fetchAndRenderReviews(productId); 
+            await fetchAndRenderReviews(productId);
+            await checkCanUserReview(productId); // <-- ADDED: Check review status
         } catch (error) {
             console.error('Error fetching product details:', error);
             errorMessage.style.display = 'block';
@@ -262,10 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('addToCartBtn').disabled = isOutOfStock;
         document.getElementById('addToCartBtn').innerHTML = `<i class="bi bi-cart-plus me-2"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}`;
 
+        // Remove old listener before adding a new one to prevent duplicates
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        addToCartBtn.replaceWith(addToCartBtn.cloneNode(true));
         document.getElementById('addToCartBtn').addEventListener('click', async () => {
             await addToCart(product, 1);
         });
 
+        const wishlistBtn = document.getElementById('wishlist-btn');
+        wishlistBtn.replaceWith(wishlistBtn.cloneNode(true));
         document.getElementById('wishlist-btn').addEventListener('click', async () => {
             const productId = parseInt(new URLSearchParams(window.location.search).get('id'));
             await toggleWishlist(productId);
@@ -296,14 +405,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 noReviewsMessage.classList.add('d-none');
                 reviewsList.classList.remove('d-none');
                 reviews.forEach(review => {
+                    const verifiedBadge = review.verifiedPurchase ? '<span class="badge bg-success ms-2"><i class="bi bi-patch-check-fill"></i> Verified Purchase</span>' : '';
                     const reviewCard = document.createElement('div');
                     reviewCard.className = 'card mb-3';
                     reviewCard.innerHTML = `
                         <div class="card-body">
-                            <h6 class="card-title fw-bold">${review.user.username}</h6>
+                            <h6 class="card-title fw-bold">${review.user.username} ${verifiedBadge}</h6>
                             <small class="text-muted d-block mb-2">${new Date(review.createdAt).toLocaleDateString()}</small>
                             <div class="mb-2">${getStarRating(review.rating)}</div>
                             <p class="card-text">${review.comment}</p>
+                            ${review.helpfulCount > 0 ? `<small class="text-muted">${review.helpfulCount} found this helpful</small>` : ''}
                         </div>
                     `;
                     reviewsList.appendChild(reviewCard);

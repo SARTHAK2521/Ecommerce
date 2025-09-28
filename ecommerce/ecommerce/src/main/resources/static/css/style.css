@@ -13,6 +13,8 @@
     --bg-main: var(--bg-light);
     --bg-card: #fff;
     --text-color: var(--text-dark);
+    /* NEW SHADOW VARIABLE */
+    --shadow-hover: 0 16px 40px rgba(0,0,0,0.1); 
 }
 
 body {
@@ -35,6 +37,7 @@ body.dark-mode {
     --bg-light: #2D3748; /* Warm dark gray */
     --border-color: #4A5568;
     --shadow: 0 4px 24px rgba(0,0,0,0.3);
+    --shadow-hover: 0 16px 40px rgba(0,0,0,0.5); /* Dark mode hover shadow */
     --bg-main: #1A202C; /* Deep dark background */
     --bg-card: #2D3748; /* Card background */
     --text-color: #E8EAF6;
@@ -156,11 +159,12 @@ body.dark-mode .nav-btn:hover {
 
 /* --- HERO SECTION --- */
 .hero-section {
-    background: linear-gradient(90deg, #e0f7fa 60%, #f5f7fa 100%);
+    /* Updated gradient for better look */
+    background: linear-gradient(135deg, #e0f7fa 0%, #f5f7fa 100%);
     padding: 7rem 0 5rem 0;
 }
 body.dark-mode .hero-section {
-    background: linear-gradient(90deg, #2D3748 60%, #1A202C 100%);
+    background: linear-gradient(135deg, #2D3748 0%, #1A202C 100%);
 }
 .hero-section .btn-primary {
     background-color: var(--theme-primary);
@@ -238,29 +242,31 @@ body.dark-mode .section-title {
     margin-right: 18px;
     margin-left: 0;
     background: var(--bg-card);
+    /* Improved aesthetic: subtle initial shadow, stronger hover effect */
     border: 1.5px solid var(--border-color);
     border-radius: var(--radius);
     text-align: center;
     padding: 2.2rem 1rem 1.7rem 1rem;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s, background 0.3s;
     cursor: pointer;
     margin-bottom: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
     user-select: none;
 }
 .category-card:last-child {
     margin-right: 0;
 }
 .category-card:hover, .category-card.active {
-    transform: translateY(-5px) scale(1.04);
-    box-shadow: 0 8px 24px rgba(0,150,136,0.09);
+    /* Stronger lift effect */
+    transform: translateY(-8px) scale(1.04);
+    box-shadow: 0 16px 40px rgba(0,121,107,0.15); /* Stronger shadow */
     border-color: var(--theme-primary);
     background: #e0f2f1;
 }
 
 body.dark-mode .category-card:hover, body.dark-mode .category-card.active {
     background: #4A5568;
-    box-shadow: 0 8px 24px rgba(100, 181, 246, 0.15);
+    box-shadow: 0 16px 40px rgba(100, 181, 246, 0.25);
     border-color: #64B5F6;
 }
 body.dark-mode .category-card {
@@ -308,17 +314,18 @@ body.dark-mode .category-card {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: var(--shadow);
+    /* Improved aesthetic: smoother, stronger lift */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.05);
 }
 .product-card:hover {
-    transform: translateY(-5px) scale(1.01);
-    box-shadow: 0 12px 32px rgba(0,121,107,0.12);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-hover);
     border-color: var(--theme-primary);
 }
 
 body.dark-mode .product-card:hover {
-    box-shadow: 0 12px 32px rgba(100, 181, 246, 0.2);
+    box-shadow: var(--shadow-hover);
     border-color: #64B5F6;
 }
 .product-img-container {
@@ -363,10 +370,11 @@ body.dark-mode .product-img-container {
     color: var(--text-color);
 }
 .product-card .price {
-    font-size: 1.25rem;
-    font-weight: 700;
+    /* Bolder, more prominent price */
+    font-size: 1.35rem;
+    font-weight: 800;
     margin-bottom: 0.5rem;
-    color: var(--theme-accent);
+    color: var(--theme-secondary);
 }
 .product-card .btn-add-to-cart, .product-card .btn-view-details {
     width: 100%;
@@ -531,14 +539,15 @@ body.dark-mode #no-results {
 
 /* --- FOOTER --- */
 footer {
-    background: linear-gradient(90deg, #e0f2f1 60%, #f5f7fa 100%);
+    /* Updated gradient for consistency */
+    background: linear-gradient(135deg, #e0f2f1 0%, #f5f7fa 100%);
     color: var(--text-color);
     font-size: 1rem;
     border-top: 2px solid var(--theme-primary);
     box-shadow: 0 -2px 12px rgba(0,0,0,0.04);
 }
 body.dark-mode footer {
-    background: linear-gradient(90deg, #2D3748 60%, #1A202C 100%);
+    background: linear-gradient(135deg, #2D3748 0%, #1A202C 100%);
     border-top: 2px solid #64B5F6;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.2);
 }

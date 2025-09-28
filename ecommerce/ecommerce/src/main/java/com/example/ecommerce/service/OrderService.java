@@ -21,6 +21,8 @@ public class OrderService {
     private CartRepository cartRepository;
     @Autowired
     private ShippingOptionRepository shippingOptionRepository;
+    @Autowired 
+    private ProductService productService; // NEW: Inject ProductService
 
     @Transactional
     public Order createOrder(Long userId, Long shippingOptionId) {
@@ -32,12 +34,28 @@ public class OrderService {
 
         Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
+        
+        if (cart.getCartItems().isEmpty()) {
+             throw new RuntimeException("Cannot create an order from an empty cart.");
+        }
+        
+        // 1. Final Stock Check before processing
+        for (CartItem cartItem : cart.getCartItems()) {
+            Product product = cartItem.getProduct();
+            if (product.getStockQuantity() < cartItem.getQuantity()) {
+                throw new RuntimeException("Insufficient stock for product: " + product.getName() + 
+                                            ". Available: " + product.getStockQuantity() + 
+                                            ", Requested: " + cartItem.getQuantity());
+            }
+        }
+
 
         Order order = new Order();
         order.setUser(user);
         order.setShippingOption(shippingOption);
         order.setShippingCost(shippingOption.getCost());
         order.setOrderDate(LocalDateTime.now());
+        order.setStatus(Order.OrderStatus.CONFIRMED); // Set initial status
 
         double subtotalAmount = 0.0;
 
@@ -51,6 +69,10 @@ public class OrderService {
             order.getOrderItems().add(orderItem);
 
             subtotalAmount += cartItem.getProduct().getPrice() * cartItem.getQuantity();
+            
+            // 2. Decrement product stock
+            Product product = cartItem.getProduct();
+            productService.updateProductStock(product.getId(), product.getStockQuantity() - cartItem.getQuantity());
         }
 
         order.setSubtotal(subtotalAmount);

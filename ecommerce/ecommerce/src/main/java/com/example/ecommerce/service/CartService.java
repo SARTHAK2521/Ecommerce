@@ -53,6 +53,12 @@ public class CartService {
         if (existingCartItem.isPresent()) {
             cartItem = existingCartItem.get();
             int newQuantity = cartItem.getQuantity() + quantity;
+            
+            // Check for stock availability when increasing quantity
+            if (newQuantity > product.getStockQuantity()) {
+                throw new RuntimeException("Cannot add product: insufficient stock available. Only " + product.getStockQuantity() + " units remaining.");
+            }
+            
             if (newQuantity <= 0) {
                 // Remove item if quantity becomes 0 or negative
                 cartItemRepository.delete(cartItem);
@@ -63,6 +69,11 @@ public class CartService {
             }
         } else {
             if (quantity > 0) {
+                // Check stock for new item
+                if (quantity > product.getStockQuantity()) {
+                    throw new RuntimeException("Cannot add product: insufficient stock available. Only " + product.getStockQuantity() + " units remaining.");
+                }
+                
                 cartItem = new CartItem();
                 cartItem.setCart(cart);
                 cartItem.setProduct(product);
