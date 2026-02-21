@@ -1,20 +1,20 @@
-# Use Java 17 image
-FROM eclipse-temurin:17-jdk
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
-# Install Maven
-RUN apt-get update && apt-get install -y maven
-
-# Set working directory
 WORKDIR /app
 
-# Copy all files
 COPY . .
 
-# Build project
+# 👇 Move into correct folder
+WORKDIR /app/ecommerce
+
 RUN mvn clean package -DskipTests
 
-# Expose port
+FROM eclipse-temurin:17-jdk
+
+WORKDIR /app
+
+COPY --from=build /app/ecommerce/target/ecommerce-0.0.1-SNAPSHOT.jar app.jar
+
 EXPOSE 8080
 
-# Run jar
-CMD ["java", "-jar", "target/ecommerce-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "app.jar"]
